@@ -1,6 +1,6 @@
 <template>
     <div>
-
+        <h1>Trang Categories</h1>
     </div>
 </template>
 
