@@ -1,12 +1,17 @@
 <template>
     <div>
+        <dashboard />
         <h1>Trang Categories</h1>
     </div>
 </template>
 
 <script>
-    export default {
+import Dashboard from '../Dashboard.vue';
 
+    export default {
+        components: {
+            Dashboard,
+        },
     }
 </script>
 

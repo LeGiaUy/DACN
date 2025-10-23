@@ -10,6 +10,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::apiResource('brands', BrandsController::class);
-Route::apiResource('categories', CategoriesController::class);
-Route::apiResource('products', ProductsController::class);
+Route::name('api.')->group(function () {
+    Route::apiResource('brands', BrandsController::class);
+    Route::apiResource('categories', CategoriesController::class);
+    Route::apiResource('products', ProductsController::class);
+});
