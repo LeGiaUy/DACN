@@ -23,7 +23,7 @@ class CategoriesController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
         ]);
 
         return Category::create($request->all());
@@ -42,7 +42,10 @@ class CategoriesController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        $request->validate(['name' => 'required|string', 'description' => 'required|string']);
+        $request->validate([
+            'name' => 'required|string|max:255', 
+            'description' => 'nullable|string'
+        ]);
         $category->update($request->all());
         return $category;
     }
