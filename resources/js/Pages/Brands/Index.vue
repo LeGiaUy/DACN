@@ -1,15 +1,15 @@
 <template>
     <div>
-        <dashboard />
+        <Menu></Menu>
         <h1>Trang Brands</h1>
     </div>
 </template>
 
 <script>
-import Dashboard from '../Dashboard.vue';
+import Menu from '../Includes/Menu.vue';
     export default {
         components: {
-            Dashboard,
+            Menu,
         },
     }
 </script>
