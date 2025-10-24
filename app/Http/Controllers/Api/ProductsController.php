@@ -21,7 +21,6 @@ class ProductsController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate incoming request data
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
@@ -29,20 +28,20 @@ class ProductsController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'img_url' => 'nullable|string|url',
+            'colors' => 'nullable|array',
+            'colors.*' => 'string|max:50',
+            'sizes' => 'nullable|array',
+            'sizes.*' => 'string|max:10',
+            'quantity' => 'required|integer|min:0',
         ]);
-
-        // Create and return the new product
-        $product = Product::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'category_id' => $request->category_id,
-            'brand_id' => $request->brand_id,
-            'img_url' => $request->img_url,
-        ]);
-
-        return response()->json($product, 201);
+    
+        $product = Product::create($request->only([
+            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity'
+        ]));
+    
+        return response()->json($product->load(['category', 'brand']), 201);
     }
+    
 
     /**
      * Display the specified resource.
@@ -50,7 +49,7 @@ class ProductsController extends Controller
     public function show($id)
     {
         $product = Product::with(['category', 'brand'])->findOrFail($id);
-        return respone()->json($product);
+        return response()->json($product);
     }
 
     /**
@@ -58,7 +57,6 @@ class ProductsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Validate incoming request data
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
@@ -66,21 +64,21 @@ class ProductsController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'img_url' => 'nullable|string|url',
+            'colors' => 'nullable|array',
+            'colors.*' => 'string|max:50',
+            'sizes' => 'nullable|array',
+            'sizes.*' => 'string|max:10',
+            'quantity' => 'required|integer|min:0',
         ]);
 
-        // Find the product and update it
         $product = Product::findOrFail($id);
-        $product->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'category_id' => $request->category_id,
-            'brand_id' => $request->brand_id,
-            'img_url' => $request->img_url,
-        ]);
+        $product->update($request->only([
+            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity'
+        ]));
 
-        return response()->json($product);
+        return response()->json($product->load(['category', 'brand']));
     }
+
 
     /**
      * Remove the specified resource from storage.
