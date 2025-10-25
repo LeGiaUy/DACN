@@ -18,6 +18,7 @@ class Product extends Model
         'colors',
         'sizes',
         'quantity',
+        'is_featured',
     ];
     
 
@@ -35,6 +36,7 @@ class Product extends Model
         'sizes' => 'array', // Tự động convert JSON thành array và ngược lại
         'colors' => 'array', // Tự động convert JSON thành array và ngược lại
         'quantity' => 'integer',
+        'is_featured' => 'boolean',
     ];
 
     /**

@@ -33,10 +33,11 @@ class ProductsController extends Controller
             'sizes' => 'nullable|array',
             'sizes.*' => 'string|max:10',
             'quantity' => 'required|integer|min:0',
+            'is_featured' => 'boolean',
         ]);
     
         $product = Product::create($request->only([
-            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity'
+            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity', 'is_featured'
         ]));
     
         return response()->json($product->load(['category', 'brand']), 201);
@@ -69,16 +70,16 @@ class ProductsController extends Controller
             'sizes' => 'nullable|array',
             'sizes.*' => 'string|max:10',
             'quantity' => 'required|integer|min:0',
+            'is_featured' => 'boolean',
         ]);
 
         $product = Product::findOrFail($id);
         $product->update($request->only([
-            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity'
+            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity', 'is_featured'
         ]));
 
         return response()->json($product->load(['category', 'brand']));
     }
-
 
     /**
      * Remove the specified resource from storage.
@@ -87,6 +88,6 @@ class ProductsController extends Controller
     {
         $product = Product::findOrFail($id);
         $product->delete();
-        return response()->json(['message' => 'Product deleted successfully.']);
+        return response()->noContent();
     }
 }

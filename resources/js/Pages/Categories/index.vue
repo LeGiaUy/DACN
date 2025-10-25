@@ -79,8 +79,7 @@ import Menu from '../Includes/Menu.vue';
 
 export default {
     components: {
-        Menu,
-        axios
+        Menu
     },
     data() {
         return {

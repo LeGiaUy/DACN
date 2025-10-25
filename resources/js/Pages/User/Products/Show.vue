@@ -1,0 +1,153 @@
+<template>
+    <UserLayout>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Breadcrumb -->
+            <nav class="flex mb-8" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <Link :href="route('user.home')" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                            </svg>
+                            Trang chủ
+                        </Link>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <Link :href="route('user.products.index')" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">Sản phẩm</Link>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{{ product.name }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Product Image -->
+                <div class="space-y-4">
+                    <div class="aspect-w-1 aspect-h-1">
+                        <img :src="product.img_url || '/images/placeholder.jpg'" 
+                             :alt="product.name"
+                             class="w-full h-96 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">{{ product.name }}</h1>
+                        <div class="mt-2 flex items-center space-x-4">
+                            <span class="text-3xl font-bold text-blue-600">{{ formatPrice(product.price) }}</span>
+                            <span class="text-sm text-gray-500">{{ product.category?.name }}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Mô tả sản phẩm</h3>
+                        <p class="text-gray-600">{{ product.description }}</p>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">Thương hiệu</h4>
+                            <p class="text-gray-600">{{ product.brand?.name }}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900">Số lượng</h4>
+                            <p class="text-gray-600">{{ product.quantity }} sản phẩm</p>
+                        </div>
+                    </div>
+
+                    <!-- Colors -->
+                    <div v-if="product.colors && product.colors.length > 0">
+                        <h4 class="font-semibold text-gray-900 mb-2">Màu sắc</h4>
+                        <div class="flex space-x-2">
+                            <span v-for="color in product.colors" :key="color" 
+                                  class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                                {{ color }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Sizes -->
+                    <div v-if="product.sizes && product.sizes.length > 0">
+                        <h4 class="font-semibold text-gray-900 mb-2">Kích thước</h4>
+                        <div class="flex space-x-2">
+                            <span v-for="size in product.sizes" :key="size" 
+                                  class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                                {{ size }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Add to Cart -->
+                    <div class="space-y-4">
+                        <div class="flex space-x-4">
+                            <button class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                                Thêm vào giỏ hàng
+                            </button>
+                            <button class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-300">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Products -->
+            <div v-if="relatedProducts.length > 0" class="mt-16">
+                <h2 class="text-2xl font-bold text-gray-900 mb-8">Sản phẩm liên quan</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id" 
+                         class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="aspect-w-16 aspect-h-9">
+                            <img :src="relatedProduct.img_url || '/images/placeholder.jpg'" 
+                                 :alt="relatedProduct.name"
+                                 class="w-full h-48 object-cover">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ relatedProduct.name }}</h3>
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ relatedProduct.description }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-bold text-blue-600">{{ formatPrice(relatedProduct.price) }}</span>
+                                <Link :href="route('user.products.show', relatedProduct.id)" 
+                                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+                                    Xem
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </UserLayout>
+</template>
+
+<script setup>
+import { Link } from '@inertiajs/vue3'
+import UserLayout from '@/Layouts/User/UserLayout.vue'
+
+defineProps({
+    product: Object,
+    relatedProducts: Array
+})
+
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(price)
+}
+</script>

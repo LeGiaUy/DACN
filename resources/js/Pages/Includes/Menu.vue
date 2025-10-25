@@ -20,13 +20,13 @@
                     <Link :href="route('dashboard')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Trang chủ</Link>
                 </li>
                 <li>
-                    <Link :href="route('categories.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Danh mục</Link>
+                    <Link :href="route('admin.categories.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Danh mục</Link>
                 </li>
                 <li>
-                    <Link :href="route('brands.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Thương hiệu</Link>
+                    <Link :href="route('admin.brands.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Thương hiệu</Link>
                 </li>
                 <li>
-                    <Link :href="route('products.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Sản phẩm</Link>
+                    <Link :href="route('admin.products.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Sản phẩm</Link>
                 </li>
             </ul>
         </div>
