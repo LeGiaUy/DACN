@@ -75,7 +75,7 @@
 
 <script>
 import axios from 'axios';
-import Menu from '../Includes/Menu.vue';
+import Menu from '../../Includes/Menu.vue';
 
 export default {
     components: {

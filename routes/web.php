@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Backend\CategoryController;
 use App\Http\Controllers\Backend\BrandController;
 use App\Http\Controllers\Backend\ProductController;
+use App\Http\Controllers\Backend\UserController;
 use Inertia\Inertia;
 
 Route::get('/dashboard', function () {
@@ -17,11 +18,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // Admin routes
-    Route::prefix('admin')->name('admin.')->group(function () {
+    // Admin routes - chỉ admin mới có thể truy cập
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::resource('categories', CategoryController::class);
         Route::resource('brands', BrandController::class);
         Route::resource('products', ProductController::class);
+        Route::resource('users', UserController::class);
+        Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
     });
 });
 
