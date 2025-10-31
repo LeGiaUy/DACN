@@ -43,7 +43,7 @@ class ProductController extends Controller
         $sortOrder = $request->get('order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(9);
         $categories = Category::all();
         $brands = Brand::all();
 

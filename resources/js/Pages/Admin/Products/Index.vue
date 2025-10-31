@@ -26,7 +26,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="product in products" :key="product.id">
+                    <tr v-for="product in (products.data || [])" :key="product.id">
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.id }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.name }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.price }}</td>
@@ -51,13 +51,23 @@
                         </td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
                             <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700">Sửa</button>
-                            |
+                            <br></br>
                             <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700">Xóa</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
 
+            <div v-if="products && products.data && products.data.length" class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                    Hiển thị {{ products.from || 0 }} - {{ products.to || 0 }} trong {{ products.total || 0 }} sản phẩm
+                </div>
+                <div class="flex gap-1">
+                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===1" @click="goToPage((products.current_page||1)-1)">Trước</button>
+                    <button v-for="page in pageNumbers" :key="page" class="px-3 py-1 border rounded" :class="{ 'bg-teal-500 text-white border-teal-500': page === products.current_page }" @click="goToPage(page)">{{ page }}</button>
+                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===(products.last_page||1)" @click="goToPage((products.current_page||1)+1)">Sau</button>
+                </div>
+            </div>
             <!-- Modal for adding/editing products -->
             <div v-if="isModalOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
                 <div class="bg-white p-6 rounded shadow-lg w-11/12 sm:w-3/4 md:w-1/2 max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -167,7 +177,9 @@ export default {
     },
     data() {
         return {
-            products: [],
+            products: { data: [] },
+            perPage: 6,
+            page: 1,
             categories: [],
             brands: [],
             loading: true,
@@ -201,15 +213,20 @@ export default {
     methods: {
         async fetchProducts() {
             try {
-                const response = await axios.get("http://127.0.0.1:8000/api/products");
+                const response = await axios.get("http://127.0.0.1:8000/api/products", { params: { page: this.page, per_page: this.perPage } });
                 this.products = response.data;
-                console.log(this.products);
             } catch (error) {
                 console.error("Error fetching products:", error);
                 this.error = "Failed to load products. Please try again later.";
             } finally {
                 this.loading = false;
             }
+        },
+        goToPage(p) {
+            if (!p) return;
+            const last = this.products.last_page || 1;
+            this.page = Math.max(1, Math.min(p, last));
+            this.fetchProducts();
         },
         async fetchCategories() {
             try {
@@ -232,10 +249,14 @@ export default {
                 return;
             }
             
+            const payload = { ...this.form };
+            // Ensure nullable fields are truly null for backend validation
+            if (!payload.img_url) payload.img_url = null;
+
             if (this.isEditing) {
-                await this.updateProduct();
+                await this.updateProduct(payload);
             } else {
-                await this.addProduct();
+                await this.addProduct(payload);
             }
             this.closeModal();
         },
@@ -253,7 +274,8 @@ export default {
                 return false;
             }
 
-            const existingProduct = this.products.find(
+            const list = (this.products && this.products.data) ? this.products.data : [];
+            const existingProduct = list.find(
                 product => product.id === this.form.id && (!this.isEditing || product.id !== this.originalId)
             );
             if (existingProduct) {
@@ -263,13 +285,13 @@ export default {
 
             return true;
         },
-        async addProduct() {
+        async addProduct(payload) {
             try {
-                const formData = { ...this.form };
+                const formData = { ...payload };
                 delete formData.id;
                 
-                const response = await axios.post("http://127.0.0.1:8000/api/products", formData);
-                this.products.push(response.data);
+                await axios.post("http://127.0.0.1:8000/api/products", formData);
+                await this.fetchProducts();
                 alert('Thêm sản phẩm thành công');
             } catch (error) {
                 console.error("Error adding product:", error);
@@ -282,14 +304,11 @@ export default {
                 }
             }
         },
-        async updateProduct() {
+        async updateProduct(payload) {
             try {
-                const response = await axios.put(`http://127.0.0.1:8000/api/products/${this.originalId}`, this.form);
+                const response = await axios.put(`http://127.0.0.1:8000/api/products/${this.originalId}`, payload);
                 
-                const index = this.products.findIndex(product => product.id === this.originalId);
-                if (index !== -1) {
-                    this.products[index] = response.data;
-                }
+                await this.fetchProducts();
                 alert('Cập nhật sản phẩm thành công');
             } catch (error) {
                 console.error("Error updating product:", error);
@@ -336,13 +355,25 @@ export default {
             try {
                 if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')) {
                     await axios.delete(`http://127.0.0.1:8000/api/products/${id}`);
-                    this.products = this.products.filter(product => product.id !== id);
+                    await this.fetchProducts();
                     alert('Xóa sản phẩm thành công');
                 }
             } catch (error) {
                 console.error('Error deleting product:', error);
                 alert('Lỗi khi xóa sản phẩm');
             }
+        }
+    },
+    computed: {
+        pageNumbers() {
+            const last = this.products.last_page || 1;
+            const current = this.products.current_page || 1;
+            const spread = 2;
+            const start = Math.max(1, current - spread);
+            const end = Math.min(last, current + spread);
+            const arr = [];
+            for (let i = start; i <= end; i++) arr.push(i);
+            return arr;
         }
     }
 }
