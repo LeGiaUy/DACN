@@ -90,4 +90,22 @@ class ProductsController extends Controller
         $product->delete();
         return response()->noContent();
     }
+
+    /**
+     * Handle image upload for products.
+     */
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        $path = $request->file('image')->store('products', 'public');
+        $url = asset('storage/' . $path);
+
+        return response()->json([
+            'url' => $url,
+            'path' => $path,
+        ], 201);
+    }
 }

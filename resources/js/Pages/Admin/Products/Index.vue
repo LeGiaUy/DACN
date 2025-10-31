@@ -17,6 +17,11 @@
                         <th class="border border-gray-300 px-4 py-2">Giá</th>
                         <th class="border border-gray-300 px-4 py-2">Danh mục</th>
                         <th class="border border-gray-300 px-4 py-2">Thương hiệu</th>
+                        <th class="border border-gray-300 px-4 py-2">Hình ảnh</th>
+                        <th class="border border-gray-300 px-4 py-2">Màu sắc</th>
+                        <th class="border border-gray-300 px-4 py-2">Kích thước</th>
+                        <th class="border border-gray-300 px-4 py-2">Số lượng</th>
+                        <th class="border border-gray-300 px-4 py-2">Nổi bật</th>
                         <th class="border border-gray-300 px-4 py-2">Quản lý</th>
                     </tr>
                 </thead>
@@ -28,6 +33,23 @@
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.category?.name }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.brand?.name }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
+                            <template v-if="product.img_url">
+                                <img :src="product.img_url" alt="image" class="inline-block max-h-12 object-contain" />
+                            </template>
+                            <span v-else class="text-gray-400">Không có</span>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            {{ Array.isArray(product.colors) ? product.colors.join(', ') : (product.colors || '') }}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            {{ Array.isArray(product.sizes) ? product.sizes.join(', ') : (product.sizes || '') }}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.quantity }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            <span v-if="product.is_featured" class="text-green-600">Có</span>
+                            <span v-else class="text-gray-500">Không</span>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
                             <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700">Sửa</button>
                             |
                             <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700">Xóa</button>
@@ -38,7 +60,7 @@
 
             <!-- Modal for adding/editing products -->
             <div v-if="isModalOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-                <div class="bg-white p-6 rounded shadow-lg w-1/2">
+                <div class="bg-white p-6 rounded shadow-lg w-11/12 sm:w-3/4 md:w-1/2 max-w-2xl max-h-[80vh] overflow-y-auto">
                     <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Sửa sản phẩm' : 'Thêm sản phẩm' }}</h2>
 
                     <form @submit.prevent="handleSubmit">
@@ -90,6 +112,36 @@
                             </select>
                         </div>
 
+                        <div class="mb-4">
+                            <label for="img_url" class="block text-sm font-semibold">Ảnh (URL)</label>
+                            <input type="url" id="img_url" v-model="form.img_url"
+                                class="w-full p-2 border border-gray-300 rounded" placeholder="https://..." />
+                            <div v-if="form.img_url" class="mt-2">
+                                <img :src="form.img_url" alt="preview" class="max-h-24 object-contain border rounded p-1" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold">Màu sắc</label>
+                            <TagsInput v-model="form.colors" :suggestions="colorSuggestions" placeholder="Nhập rồi Enter, Tab hoặc dấu phẩy" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold">Kích thước</label>
+                            <TagsInput v-model="form.sizes" :suggestions="sizeSuggestions" placeholder="Ví dụ: 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="quantity" class="block text-sm font-semibold">Số lượng</label>
+                            <input type="number" id="quantity" v-model.number="form.quantity"
+                                class="w-full p-2 border border-gray-300 rounded" min="0" placeholder="Số lượng trong kho" />
+                        </div>
+
+                        <div class="mb-4 flex items-center">
+                            <input type="checkbox" id="is_featured" v-model="form.is_featured" class="mr-2" />
+                            <label for="is_featured" class="text-sm font-semibold">Nổi bật</label>
+                        </div>
+
                         <div class="flex justify-end">
                             <button type="button" @click="closeModal" class="mr-4 text-gray-500">Hủy</button>
                             <button type="submit" class="bg-teal-500 text-dark px-4 py-2 rounded">
@@ -106,10 +158,12 @@
 <script>
 import axios from 'axios';
 import Menu from '../../Includes/Menu.vue';
+import TagsInput from '../../../Components/TagsInput.vue';
 
 export default {
     components: {
-        Menu
+        Menu,
+        TagsInput
     },
     data() {
         return {
@@ -127,7 +181,14 @@ export default {
                 description: '',
                 category_id: null,
                 brand_id: null,
+                img_url: '',
+                quantity: 0,
+                is_featured: false,
+                colors: [],
+                sizes: [],
             },
+            colorSuggestions: ['Đỏ','Xanh','Vàng','Trắng','Đen','Hồng','Tím','Nâu','Cam','Xám'],
+            sizeSuggestions: ['1/2', '2/3', '3/4', '4/5', '5/6', '6/7', '7/8', '8/9', '9/10', '10/11','11/12', '12/13'],
             idError: null,
             originalId: null,
         }
@@ -246,6 +307,8 @@ export default {
                 this.isEditing = true;
                 this.form = { ...product };
                 this.originalId = product.id;
+                if (typeof this.form.quantity !== 'number') this.form.quantity = Number(this.form.quantity || 0);
+                if (typeof this.form.is_featured !== 'boolean') this.form.is_featured = !!this.form.is_featured;
             } else {
                 this.isEditing = false;
                 this.form = { 
@@ -254,7 +317,12 @@ export default {
                     price: 0, 
                     description: '', 
                     category_id: null, 
-                    brand_id: null 
+                    brand_id: null,
+                    img_url: '',
+                    quantity: 0,
+                    is_featured: false,
+                    colors: [],
+                    sizes: [],
                 };
                 this.originalId = null;
             }
