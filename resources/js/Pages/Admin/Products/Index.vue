@@ -26,7 +26,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="product in products" :key="product.id">
+                    <tr v-for="product in (products.data || [])" :key="product.id">
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.id }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.name }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ product.price }}</td>
@@ -44,20 +44,30 @@
                         <td class="border border-gray-300 px-4 py-2 text-center">
                             {{ Array.isArray(product.sizes) ? product.sizes.join(', ') : (product.sizes || '') }}
                         </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.quantity }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.total_quantity ?? product.quantity }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
                             <span v-if="product.is_featured" class="text-green-600">Có</span>
                             <span v-else class="text-gray-500">Không</span>
                         </td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
                             <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700">Sửa</button>
-                            |
+                            <br></br>
                             <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700">Xóa</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
 
+            <div v-if="products && products.data && products.data.length" class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                    Hiển thị {{ products.from || 0 }} - {{ products.to || 0 }} trong {{ products.total || 0 }} sản phẩm
+                </div>
+                <div class="flex gap-1">
+                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===1" @click="goToPage((products.current_page||1)-1)">Trước</button>
+                    <button v-for="page in pageNumbers" :key="page" class="px-3 py-1 border rounded" :class="{ 'bg-teal-500 text-white border-teal-500': page === products.current_page }" @click="goToPage(page)">{{ page }}</button>
+                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===(products.last_page||1)" @click="goToPage((products.current_page||1)+1)">Sau</button>
+                </div>
+            </div>
             <!-- Modal for adding/editing products -->
             <div v-if="isModalOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
                 <div class="bg-white p-6 rounded shadow-lg w-11/12 sm:w-3/4 md:w-1/2 max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -137,6 +147,48 @@
                                 class="w-full p-2 border border-gray-300 rounded" min="0" placeholder="Số lượng trong kho" />
                         </div>
 
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-semibold">Biến thể (màu/kích thước)</label>
+                                <div class="space-x-2">
+                                    <button type="button" class="text-sm text-teal-600" @click="generateVariantsFromOptions">Tạo từ màu/kích thước</button>
+                                    <button type="button" class="text-sm text-teal-600" @click="addVariantRow">Thêm dòng</button>
+                                </div>
+                            </div>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="table-auto w-full border-collapse border border-gray-200">
+                                    <thead>
+                                        <tr class="bg-gray-100 text-left">
+                                            <th class="border border-gray-300 px-2 py-1">Màu</th>
+                                            <th class="border border-gray-300 px-2 py-1">Kích thước</th>
+                                            <th class="border border-gray-300 px-2 py-1">SKU</th>
+                                            <th class="border border-gray-300 px-2 py-1">Số lượng</th>
+                                            <th class="border border-gray-300 px-2 py-1"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(v, idx) in form.variants" :key="idx">
+                                            <td class="border border-gray-300 px-2 py-1">
+                                                <input type="text" v-model="v.color" class="w-full p-1 border rounded" placeholder="VD: Đen" />
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-1">
+                                                <input type="text" v-model="v.size" class="w-full p-1 border rounded" placeholder="VD: 41" />
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-1">
+                                                <input type="text" v-model="v.sku" class="w-full p-1 border rounded" placeholder="Tùy chọn" />
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-1">
+                                                <input type="number" min="0" v-model.number="v.quantity" class="w-full p-1 border rounded" />
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-1 text-center">
+                                                <button type="button" class="text-red-600" @click="removeVariantRow(idx)">Xóa</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="mb-4 flex items-center">
                             <input type="checkbox" id="is_featured" v-model="form.is_featured" class="mr-2" />
                             <label for="is_featured" class="text-sm font-semibold">Nổi bật</label>
@@ -167,7 +219,9 @@ export default {
     },
     data() {
         return {
-            products: [],
+            products: { data: [] },
+            perPage: 6,
+            page: 1,
             categories: [],
             brands: [],
             loading: true,
@@ -186,6 +240,7 @@ export default {
                 is_featured: false,
                 colors: [],
                 sizes: [],
+                variants: [],
             },
             colorSuggestions: ['Đỏ','Xanh','Vàng','Trắng','Đen','Hồng','Tím','Nâu','Cam','Xám'],
             sizeSuggestions: ['1/2', '2/3', '3/4', '4/5', '5/6', '6/7', '7/8', '8/9', '9/10', '10/11','11/12', '12/13'],
@@ -201,15 +256,49 @@ export default {
     methods: {
         async fetchProducts() {
             try {
-                const response = await axios.get("http://127.0.0.1:8000/api/products");
+                const response = await axios.get("http://127.0.0.1:8000/api/products", { params: { page: this.page, per_page: this.perPage } });
                 this.products = response.data;
-                console.log(this.products);
             } catch (error) {
                 console.error("Error fetching products:", error);
                 this.error = "Failed to load products. Please try again later.";
             } finally {
                 this.loading = false;
             }
+        },
+        addVariantRow() {
+            if (!Array.isArray(this.form.variants)) this.form.variants = [];
+            this.form.variants.push({ color: '', size: '', sku: '', quantity: 0 });
+        },
+        removeVariantRow(idx) {
+            if (!Array.isArray(this.form.variants)) return;
+            this.form.variants.splice(idx, 1);
+        },
+        generateVariantsFromOptions() {
+            const colors = Array.isArray(this.form.colors) && this.form.colors.length ? this.form.colors : [null];
+            const sizes = Array.isArray(this.form.sizes) && this.form.sizes.length ? this.form.sizes : [null];
+            const combos = [];
+            colors.forEach(c => {
+                sizes.forEach(s => {
+                    combos.push({ color: c || '', size: s || '', sku: '', quantity: 0 });
+                });
+            });
+            // Merge with existing by key (color+size)
+            const map = new Map();
+            (this.form.variants || []).forEach(v => {
+                const key = `${v.color || ''}__${v.size || ''}`;
+                map.set(key, { ...v });
+            });
+            combos.forEach(v => {
+                const key = `${v.color || ''}__${v.size || ''}`;
+                if (!map.has(key)) map.set(key, v);
+            });
+            this.form.variants = Array.from(map.values());
+        },
+        goToPage(p) {
+            if (!p) return;
+            const last = this.products.last_page || 1;
+            this.page = Math.max(1, Math.min(p, last));
+            this.fetchProducts();
         },
         async fetchCategories() {
             try {
@@ -232,10 +321,22 @@ export default {
                 return;
             }
             
-            if (this.isEditing) {
-                await this.updateProduct();
+            const payload = { ...this.form };
+            // Ensure nullable fields are truly null for backend validation
+            if (!payload.img_url) payload.img_url = null;
+            // Clean variants
+            if (Array.isArray(payload.variants)) {
+                payload.variants = payload.variants
+                    .filter(v => (v.color || v.size) && v.quantity >= 0)
+                    .map(v => ({ color: v.color || null, size: v.size || null, sku: v.sku || null, quantity: Number(v.quantity || 0) }));
             } else {
-                await this.addProduct();
+                delete payload.variants;
+            }
+
+            if (this.isEditing) {
+                await this.updateProduct(payload);
+            } else {
+                await this.addProduct(payload);
             }
             this.closeModal();
         },
@@ -253,7 +354,8 @@ export default {
                 return false;
             }
 
-            const existingProduct = this.products.find(
+            const list = (this.products && this.products.data) ? this.products.data : [];
+            const existingProduct = list.find(
                 product => product.id === this.form.id && (!this.isEditing || product.id !== this.originalId)
             );
             if (existingProduct) {
@@ -263,13 +365,13 @@ export default {
 
             return true;
         },
-        async addProduct() {
+        async addProduct(payload) {
             try {
-                const formData = { ...this.form };
+                const formData = { ...payload };
                 delete formData.id;
                 
-                const response = await axios.post("http://127.0.0.1:8000/api/products", formData);
-                this.products.push(response.data);
+                await axios.post("http://127.0.0.1:8000/api/products", formData);
+                await this.fetchProducts();
                 alert('Thêm sản phẩm thành công');
             } catch (error) {
                 console.error("Error adding product:", error);
@@ -282,14 +384,11 @@ export default {
                 }
             }
         },
-        async updateProduct() {
+        async updateProduct(payload) {
             try {
-                const response = await axios.put(`http://127.0.0.1:8000/api/products/${this.originalId}`, this.form);
+                const response = await axios.put(`http://127.0.0.1:8000/api/products/${this.originalId}`, payload);
                 
-                const index = this.products.findIndex(product => product.id === this.originalId);
-                if (index !== -1) {
-                    this.products[index] = response.data;
-                }
+                await this.fetchProducts();
                 alert('Cập nhật sản phẩm thành công');
             } catch (error) {
                 console.error("Error updating product:", error);
@@ -309,6 +408,7 @@ export default {
                 this.originalId = product.id;
                 if (typeof this.form.quantity !== 'number') this.form.quantity = Number(this.form.quantity || 0);
                 if (typeof this.form.is_featured !== 'boolean') this.form.is_featured = !!this.form.is_featured;
+                if (!Array.isArray(this.form.variants)) this.form.variants = (product.variants || []).map(v => ({ color: v.color || '', size: v.size || '', sku: v.sku || '', quantity: Number(v.quantity || 0) }));
             } else {
                 this.isEditing = false;
                 this.form = { 
@@ -323,6 +423,7 @@ export default {
                     is_featured: false,
                     colors: [],
                     sizes: [],
+                    variants: [],
                 };
                 this.originalId = null;
             }
@@ -336,13 +437,25 @@ export default {
             try {
                 if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')) {
                     await axios.delete(`http://127.0.0.1:8000/api/products/${id}`);
-                    this.products = this.products.filter(product => product.id !== id);
+                    await this.fetchProducts();
                     alert('Xóa sản phẩm thành công');
                 }
             } catch (error) {
                 console.error('Error deleting product:', error);
                 alert('Lỗi khi xóa sản phẩm');
             }
+        }
+    },
+    computed: {
+        pageNumbers() {
+            const last = this.products.last_page || 1;
+            const current = this.products.current_page || 1;
+            const spread = 2;
+            const start = Math.max(1, current - spread);
+            const end = Math.min(last, current + spread);
+            const arr = [];
+            for (let i = start; i <= end; i++) arr.push(i);
+            return arr;
         }
     }
 }

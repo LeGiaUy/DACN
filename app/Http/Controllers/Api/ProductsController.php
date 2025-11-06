@@ -5,15 +5,25 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\ProductVariant;
 
 class ProductsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Product::with(['category', 'brand'])->get();
+        $perPage = (int) $request->get('per_page', 6);
+        $perPage = max(1, min($perPage, 50));
+        
+        $with = ['category', 'brand'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $with[] = 'variants';
+        }
+        
+        $products = Product::with($with)->paginate($perPage);
+        return response()->json($products);
     }
 
     /**
@@ -32,15 +42,42 @@ class ProductsController extends Controller
             'colors.*' => 'string|max:50',
             'sizes' => 'nullable|array',
             'sizes.*' => 'string|max:10',
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'nullable|integer|min:0',
             'is_featured' => 'boolean',
+            'variants' => 'nullable|array',
+            'variants.*.color' => 'nullable|string|max:50',
+            'variants.*.size' => 'nullable|string|max:20',
+            'variants.*.sku' => 'nullable|string|max:100',
+            'variants.*.quantity' => 'required_with:variants|integer|min:0',
         ]);
     
         $product = Product::create($request->only([
             'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity', 'is_featured'
         ]));
+
+        if ($request->filled('variants') && \Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $variants = collect($request->input('variants'))
+                ->map(function ($v) use ($product) {
+                    return [
+                        'product_id' => $product->id,
+                        'color' => $v['color'] ?? null,
+                        'size' => $v['size'] ?? null,
+                        'sku' => $v['sku'] ?? null,
+                        'quantity' => (int) ($v['quantity'] ?? 0),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })->all();
+            if (!empty($variants)) {
+                ProductVariant::insert($variants);
+            }
+        }
     
-        return response()->json($product->load(['category', 'brand']), 201);
+        $with = ['category', 'brand'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $with[] = 'variants';
+        }
+        return response()->json($product->load($with), 201);
     }
     
 
@@ -49,7 +86,12 @@ class ProductsController extends Controller
      */
     public function show($id)
     {
-        $product = Product::with(['category', 'brand'])->findOrFail($id);
+        $with = ['category', 'brand'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $with[] = 'variants';
+        }
+        
+        $product = Product::with($with)->findOrFail($id);
         return response()->json($product);
     }
 
@@ -69,8 +111,13 @@ class ProductsController extends Controller
             'colors.*' => 'string|max:50',
             'sizes' => 'nullable|array',
             'sizes.*' => 'string|max:10',
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'nullable|integer|min:0',
             'is_featured' => 'boolean',
+            'variants' => 'nullable|array',
+            'variants.*.color' => 'nullable|string|max:50',
+            'variants.*.size' => 'nullable|string|max:20',
+            'variants.*.sku' => 'nullable|string|max:100',
+            'variants.*.quantity' => 'required_with:variants|integer|min:0',
         ]);
 
         $product = Product::findOrFail($id);
@@ -78,7 +125,30 @@ class ProductsController extends Controller
             'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity', 'is_featured'
         ]));
 
-        return response()->json($product->load(['category', 'brand']));
+        if ($request->has('variants') && \Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $product->variants()->delete();
+            $variants = collect($request->input('variants'))
+                ->map(function ($v) use ($product) {
+                    return [
+                        'product_id' => $product->id,
+                        'color' => $v['color'] ?? null,
+                        'size' => $v['size'] ?? null,
+                        'sku' => $v['sku'] ?? null,
+                        'quantity' => (int) ($v['quantity'] ?? 0),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })->all();
+            if (!empty($variants)) {
+                ProductVariant::insert($variants);
+            }
+        }
+
+        $with = ['category', 'brand'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $with[] = 'variants';
+        }
+        return response()->json($product->load($with));
     }
 
     /**

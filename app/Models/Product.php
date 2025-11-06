@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Schema;
 
 class Product extends Model
 {
@@ -32,11 +33,21 @@ class Product extends Model
         return $this->belongsTo(Brand::class);
     }
 
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
     protected $casts = [
         'sizes' => 'array', // Tự động convert JSON thành array và ngược lại
         'colors' => 'array', // Tự động convert JSON thành array và ngược lại
         'quantity' => 'integer',
         'is_featured' => 'boolean',
+    ];
+
+    protected $appends = [
+        'total_quantity',
+        'stock_status',
     ];
 
     /**
@@ -72,11 +83,35 @@ class Product extends Model
     }
 
     /**
+     * Safely check if variants table exists and has data
+     */
+    protected function hasVariants()
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->isNotEmpty();
+        }
+        
+        try {
+            return Schema::hasTable('product_variants') 
+                && $this->variants()->exists();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Check if product is in stock
      */
     public function isInStock()
     {
-        return $this->quantity > 0;
+        if ($this->hasVariants()) {
+            try {
+                return (int) $this->variants()->sum('quantity') > 0;
+            } catch (\Exception $e) {
+                return (int) $this->quantity > 0;
+            }
+        }
+        return (int) $this->quantity > 0;
     }
 
     /**
@@ -84,13 +119,35 @@ class Product extends Model
      */
     public function getStockStatusAttribute()
     {
-        if ($this->quantity > 10) {
-            return 'Còn hàng';
-        } elseif ($this->quantity > 0) {
-            return 'Sắp hết hàng';
+        $total = 0;
+        if ($this->hasVariants()) {
+            try {
+                $total = (int) $this->variants()->sum('quantity');
+            } catch (\Exception $e) {
+                $total = (int) $this->quantity;
+            }
         } else {
-            return 'Hết hàng';
+            $total = (int) $this->quantity;
         }
+
+        if ($total > 10) {
+            return 'Còn hàng';
+        } elseif ($total > 0) {
+            return 'Sắp hết hàng';
+        }
+        return 'Hết hàng';
+    }
+
+    public function getTotalQuantityAttribute()
+    {
+        if ($this->hasVariants()) {
+            try {
+                return (int) $this->variants()->sum('quantity');
+            } catch (\Exception $e) {
+                return (int) $this->quantity;
+            }
+        }
+        return (int) $this->quantity;
     }
 
 }

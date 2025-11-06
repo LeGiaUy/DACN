@@ -43,7 +43,7 @@ class ProductController extends Controller
         $sortOrder = $request->get('order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(9);
         $categories = Category::all();
         $brands = Brand::all();
 
@@ -57,7 +57,12 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load(['category', 'brand']);
+        $with = ['category', 'brand'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+            $with[] = 'variants';
+        }
+        
+        $product->load($with);
         
         // Get related products
         $relatedProducts = Product::with(['category', 'brand'])

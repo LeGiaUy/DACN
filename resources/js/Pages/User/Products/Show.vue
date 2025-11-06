@@ -64,28 +64,32 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-900">Số lượng</h4>
-                            <p class="text-gray-600">{{ product.quantity }} sản phẩm</p>
+                            <p class="text-gray-600">{{ (product.total_quantity ?? product.quantity) }} sản phẩm</p>
                         </div>
                     </div>
 
-                    <!-- Colors -->
-                    <div v-if="product.colors && product.colors.length > 0">
-                        <h4 class="font-semibold text-gray-900 mb-2">Màu sắc</h4>
-                        <div class="flex space-x-2">
-                            <span v-for="color in product.colors" :key="color" 
-                                  class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                                {{ color }}
-                            </span>
+                    <!-- Variant selection -->
+                    <div v-if="(product.variants && product.variants.length) || (product.colors?.length || product.sizes?.length)">
+                        <h4 class="font-semibold text-gray-900 mb-2">Chọn biến thể</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Màu sắc</label>
+                                <select v-model="selectedColor" class="w-full p-2 border rounded">
+                                    <option :value="''">Chọn màu</option>
+                                    <option v-for="c in availableColors" :key="c || 'none'" :value="c">{{ c || 'Không' }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kích thước</label>
+                                <select v-model="selectedSize" class="w-full p-2 border rounded">
+                                    <option :value="''">Chọn kích thước</option>
+                                    <option v-for="s in availableSizes" :key="s || 'none'" :value="s">{{ s || 'Không' }}</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-
-                    <!-- Sizes -->
-                    <div v-if="product.sizes && product.sizes.length > 0">
-                        <h4 class="font-semibold text-gray-900 mb-2">Kích thước</h4>
-                        <div class="flex space-x-2">
-                            <span v-for="size in product.sizes" :key="size" 
-                                  class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                                {{ size }}
+                        <div class="mt-2 text-sm" v-if="currentVariant">
+                            <span :class="currentVariant.quantity > 0 ? 'text-green-600' : 'text-red-600'">
+                                {{ currentVariant.quantity > 0 ? `Còn ${currentVariant.quantity} sản phẩm` : 'Hết hàng' }}
                             </span>
                         </div>
                     </div>
@@ -93,7 +97,7 @@
                     <!-- Add to Cart -->
                     <div class="space-y-4">
                         <div class="flex space-x-4">
-                            <button class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                            <button :disabled="!canAddToCart" :class="['flex-1 px-6 py-3 rounded-lg transition duration-300 font-semibold', canAddToCart ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">
                                 Thêm vào giỏ hàng
                             </button>
                             <button class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-300">
@@ -138,10 +142,41 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import UserLayout from '@/Layouts/User/UserLayout.vue'
+import { computed, ref } from 'vue'
 
-defineProps({
+const props = defineProps({
     product: Object,
     relatedProducts: Array
+})
+
+const selectedColor = ref('')
+const selectedSize = ref('')
+
+const variants = computed(() => Array.isArray(props.product?.variants) ? props.product.variants : [])
+
+const availableColors = computed(() => {
+    if (!variants.value.length) return Array.isArray(props.product?.colors) ? props.product.colors : []
+    const set = new Set(variants.value.map(v => v.color || ''))
+    return Array.from(set)
+})
+
+const availableSizes = computed(() => {
+    if (!variants.value.length) return Array.isArray(props.product?.sizes) ? props.product.sizes : []
+    const list = variants.value
+        .filter(v => (selectedColor.value === '' || (v.color || '') === selectedColor.value))
+        .map(v => v.size || '')
+    return Array.from(new Set(list))
+})
+
+const currentVariant = computed(() => {
+    if (!variants.value.length) return null
+    return variants.value.find(v => (v.color || '') === selectedColor.value && (v.size || '') === selectedSize.value) || null
+})
+
+const canAddToCart = computed(() => {
+    if (!variants.value.length) return (props.product?.quantity || 0) > 0
+    if (!currentVariant.value) return false
+    return (currentVariant.value.quantity || 0) > 0
 })
 
 const formatPrice = (price) => {
