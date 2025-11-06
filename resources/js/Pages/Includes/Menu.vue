@@ -28,6 +28,9 @@
                 <li>
                     <Link :href="route('admin.products.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Sản phẩm</Link>
                 </li>
+                <li>
+                    <Link :href="route('admin.product-variants.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Biến thể</Link>
+                </li>
             </ul>
         </div>
     </div>
