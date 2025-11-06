@@ -133,4 +133,9 @@ class User extends Authenticatable
             default => 'Không xác định'
         };
     }
+
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }
