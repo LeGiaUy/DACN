@@ -29,11 +29,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $cartCount = 0;
+        
+        if ($user) {
+            $cartCount = \App\Models\CartItem::where('user_id', $user->id)->sum('quantity');
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'cartCount' => $cartCount,
         ];
     }
 }

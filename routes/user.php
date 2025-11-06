@@ -5,6 +5,7 @@ use App\Http\Controllers\User\HomeController;
 use App\Http\Controllers\User\ProductController;
 use App\Http\Controllers\User\CategoryController;
 use App\Http\Controllers\User\BrandController;
+use App\Http\Controllers\User\CartController;
 
 // Public routes for users
 Route::get('/', [HomeController::class, 'index'])->name('user.home');
@@ -14,3 +15,8 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('user.cate
 Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('user.categories.show');
 Route::get('/brands', [BrandController::class, 'index'])->name('user.brands.index');
 Route::get('/brands/{brand}', [BrandController::class, 'show'])->name('user.brands.show');
+
+// Authenticated routes for users
+Route::middleware('auth')->group(function () {
+    Route::get('/cart', [CartController::class, 'index'])->name('user.cart');
+});

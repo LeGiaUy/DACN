@@ -74,17 +74,20 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm text-gray-600 mb-1">Màu sắc</label>
-                                <select v-model="selectedColor" class="w-full p-2 border rounded">
+                                <select v-model="selectedColor" class="w-full p-2 border rounded" :disabled="availableColors.length === 0">
                                     <option :value="''">Chọn màu</option>
-                                    <option v-for="c in availableColors" :key="c || 'none'" :value="c">{{ c || 'Không' }}</option>
+                                    <option v-for="c in availableColors" :key="c" :value="c">{{ c }}</option>
                                 </select>
+                                <p v-if="availableColors.length === 0" class="text-xs text-gray-500 mt-1">Không có màu sắc</p>
                             </div>
                             <div>
                                 <label class="block text-sm text-gray-600 mb-1">Kích thước</label>
-                                <select v-model="selectedSize" class="w-full p-2 border rounded">
+                                <select v-model="selectedSize" class="w-full p-2 border rounded" :disabled="availableSizes.length === 0 || (variants.length > 0 && !selectedColor)">
                                     <option :value="''">Chọn kích thước</option>
-                                    <option v-for="s in availableSizes" :key="s || 'none'" :value="s">{{ s || 'Không' }}</option>
+                                    <option v-for="s in availableSizes" :key="s" :value="s">{{ s }}</option>
                                 </select>
+                                <p v-if="variants.length > 0 && !selectedColor" class="text-xs text-gray-500 mt-1">Vui lòng chọn màu trước</p>
+                                <p v-else-if="availableSizes.length === 0" class="text-xs text-gray-500 mt-1">Không có kích thước</p>
                             </div>
                         </div>
                         <div class="mt-2 text-sm" v-if="currentVariant">
@@ -94,17 +97,39 @@
                         </div>
                     </div>
 
+                    <!-- Quantity selector -->
+                    <div v-if="canAddToCart" class="flex items-center space-x-4">
+                        <label class="text-sm font-semibold text-gray-900">Số lượng:</label>
+                        <div class="flex items-center space-x-2">
+                            <button @click="decreaseQuantity" :disabled="quantity <= 1" 
+                                class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                                -
+                            </button>
+                            <input type="number" v-model.number="quantity" min="1" :max="maxQuantity"
+                                class="w-20 px-2 py-1 border rounded text-center" />
+                            <button @click="increaseQuantity" :disabled="quantity >= maxQuantity"
+                                class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                                +
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Add to Cart -->
                     <div class="space-y-4">
                         <div class="flex space-x-4">
-                            <button :disabled="!canAddToCart" :class="['flex-1 px-6 py-3 rounded-lg transition duration-300 font-semibold', canAddToCart ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">
-                                Thêm vào giỏ hàng
+                            <button @click="addToCart" :disabled="!canAddToCart || addingToCart" 
+                                :class="['flex-1 px-6 py-3 rounded-lg transition duration-300 font-semibold', 
+                                    canAddToCart && !addingToCart ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">
+                                {{ addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng' }}
                             </button>
                             <button class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-300">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                                 </svg>
                             </button>
+                        </div>
+                        <div v-if="cartMessage" :class="['text-sm p-2 rounded', cartMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700']">
+                            {{ cartMessage.text }}
                         </div>
                     </div>
                 </div>
@@ -140,37 +165,79 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage, router } from '@inertiajs/vue3'
 import UserLayout from '@/Layouts/User/UserLayout.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
     product: Object,
     relatedProducts: Array
 })
 
+const page = usePage()
 const selectedColor = ref('')
 const selectedSize = ref('')
+const quantity = ref(1)
+const addingToCart = ref(false)
+const cartMessage = ref(null)
 
 const variants = computed(() => Array.isArray(props.product?.variants) ? props.product.variants : [])
 
+const normalize = (val) => (val ?? '').toString().trim()
+
 const availableColors = computed(() => {
-    if (!variants.value.length) return Array.isArray(props.product?.colors) ? props.product.colors : []
-    const set = new Set(variants.value.map(v => v.color || ''))
-    return Array.from(set)
+    // When variants exist, always derive colors from variants to ensure accuracy
+    if (variants.value.length > 0) {
+        const colors = variants.value
+            .map(v => normalize(v.color))
+            .filter(c => c !== '')
+        return Array.from(new Set(colors))
+    }
+
+    // Fallback to product.colors when there are no variants
+    if (Array.isArray(props.product?.colors) && props.product.colors.length > 0) {
+        return props.product.colors
+            .map(c => normalize(c))
+            .filter(c => c !== '')
+    }
+
+    return []
 })
 
 const availableSizes = computed(() => {
-    if (!variants.value.length) return Array.isArray(props.product?.sizes) ? props.product.sizes : []
-    const list = variants.value
-        .filter(v => (selectedColor.value === '' || (v.color || '') === selectedColor.value))
-        .map(v => v.size || '')
-    return Array.from(new Set(list))
+    if (variants.value.length > 0) {
+        const selected = normalize(selectedColor.value)
+        const filteredVariants = selected
+            ? variants.value.filter(v => normalize(v.color) === selected)
+            : []
+
+        const sizes = filteredVariants
+            .map(v => normalize(v.size))
+            .filter(s => s !== '')
+        return Array.from(new Set(sizes))
+    }
+
+    if (Array.isArray(props.product?.sizes) && props.product.sizes.length > 0) {
+        return props.product.sizes
+            .map(s => normalize(s))
+            .filter(s => s !== '')
+    }
+
+    return []
 })
 
 const currentVariant = computed(() => {
     if (!variants.value.length) return null
-    return variants.value.find(v => (v.color || '') === selectedColor.value && (v.size || '') === selectedSize.value) || null
+    const selColor = normalize(selectedColor.value)
+    const selSize = normalize(selectedSize.value)
+    return variants.value.find(v => normalize(v.color) === selColor && normalize(v.size) === selSize) || null
+})
+
+const maxQuantity = computed(() => {
+    if (!variants.value.length) return props.product?.quantity || 0
+    if (!currentVariant.value) return 0
+    return currentVariant.value.quantity || 0
 })
 
 const canAddToCart = computed(() => {
@@ -178,6 +245,106 @@ const canAddToCart = computed(() => {
     if (!currentVariant.value) return false
     return (currentVariant.value.quantity || 0) > 0
 })
+
+// Watch quantity to ensure it doesn't exceed max
+watch(quantity, (newVal) => {
+    if (newVal > maxQuantity.value) {
+        quantity.value = maxQuantity.value
+    }
+    if (newVal < 1) {
+        quantity.value = 1
+    }
+})
+
+// Watch color selection to reset size (since available sizes depend on color)
+watch(selectedColor, () => {
+    selectedSize.value = ''
+    quantity.value = 1
+    cartMessage.value = null
+})
+
+// Watch variant selection to reset quantity
+watch(selectedSize, () => {
+    quantity.value = 1
+    cartMessage.value = null
+})
+
+const increaseQuantity = () => {
+    if (quantity.value < maxQuantity.value) {
+        quantity.value++
+    }
+}
+
+const decreaseQuantity = () => {
+    if (quantity.value > 1) {
+        quantity.value--
+    }
+}
+
+const addToCart = async () => {
+    if (!canAddToCart.value) return
+
+    // Check if user is authenticated
+    const user = page.props.auth?.user
+    if (!user) {
+        cartMessage.value = {
+            type: 'error',
+            text: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng'
+        }
+        setTimeout(() => {
+            cartMessage.value = null
+        }, 3000)
+        return
+    }
+
+    addingToCart.value = true
+    cartMessage.value = null
+
+    try {
+        // Ensure CSRF cookie exists for session-protected routes
+        await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+
+        const response = await axios.post('/api/cart', {
+            product_id: props.product.id,
+            color: selectedColor.value || null,
+            size: selectedSize.value || null,
+            quantity: quantity.value
+        }, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            withCredentials: true
+        })
+
+        cartMessage.value = {
+            type: 'success',
+            text: response.data.message || 'Đã thêm vào giỏ hàng thành công!'
+        }
+
+        // Reset quantity after successful add
+        quantity.value = 1
+
+        // Reload page to update cart count in header
+        router.reload({ only: ['cartCount'] })
+
+        setTimeout(() => {
+            cartMessage.value = null
+        }, 3000)
+    } catch (error) {
+        console.error('Error adding to cart:', error)
+        cartMessage.value = {
+            type: 'error',
+            text: error.response?.data?.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng'
+        }
+        setTimeout(() => {
+            cartMessage.value = null
+        }, 3000)
+    } finally {
+        addingToCart.value = false
+    }
+}
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
