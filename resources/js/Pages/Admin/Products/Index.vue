@@ -18,8 +18,7 @@
                         <th class="border border-gray-300 px-4 py-2">Danh mục</th>
                         <th class="border border-gray-300 px-4 py-2">Thương hiệu</th>
                         <th class="border border-gray-300 px-4 py-2">Hình ảnh</th>
-                        <th class="border border-gray-300 px-4 py-2">Màu sắc</th>
-                        <th class="border border-gray-300 px-4 py-2">Kích thước</th>
+                        <th class="border border-gray-300 px-4 py-2">Biến thể</th>
                         <th class="border border-gray-300 px-4 py-2">Số lượng</th>
                         <th class="border border-gray-300 px-4 py-2">Nổi bật</th>
                         <th class="border border-gray-300 px-4 py-2">Quản lý</th>
@@ -39,20 +38,31 @@
                             <span v-else class="text-gray-400">Không có</span>
                         </td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
-                            {{ Array.isArray(product.colors) ? product.colors.join(', ') : (product.colors || '') }}
+                            <div class="flex flex-col items-center space-y-1">
+                                <span class="text-sm">
+                                    <span class="font-semibold">{{ product.variants?.length || 0 }}</span> biến thể
+                                </span>
+                                <a 
+                                    :href="`/admin/product-variants?product_id=${product.id}`" 
+                                    class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                    Quản lý
+                                </a>
+                            </div>
                         </td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
-                            {{ Array.isArray(product.sizes) ? product.sizes.join(', ') : (product.sizes || '') }}
+                            <span :class="getQuantityClass(product.total_quantity ?? product.quantity)">
+                                {{ product.total_quantity ?? product.quantity }}
+                            </span>
                         </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.total_quantity ?? product.quantity }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
                             <span v-if="product.is_featured" class="text-green-600">Có</span>
                             <span v-else class="text-gray-500">Không</span>
                         </td>
                         <td class="border border-gray-300 px-4 py-2 text-center">
-                            <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700">Sửa</button>
-                            <br></br>
-                            <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700">Xóa</button>
+                            <div class="flex flex-col space-y-1">
+                                <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700 text-sm">Sửa</button>
+                                <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700 text-sm">Xóa</button>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -132,31 +142,48 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="block text-sm font-semibold">Màu sắc</label>
-                            <TagsInput v-model="form.colors" :suggestions="colorSuggestions" placeholder="Nhập rồi Enter, Tab hoặc dấu phẩy" />
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="block text-sm font-semibold">Kích thước</label>
-                            <TagsInput v-model="form.sizes" :suggestions="sizeSuggestions" placeholder="Ví dụ: 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9" />
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="quantity" class="block text-sm font-semibold">Số lượng</label>
+                            <label for="quantity" class="block text-sm font-semibold">Số lượng (nếu không dùng biến thể)</label>
                             <input type="number" id="quantity" v-model.number="form.quantity"
                                 class="w-full p-2 border border-gray-300 rounded" min="0" placeholder="Số lượng trong kho" />
+                            <p class="text-xs text-gray-500 mt-1">Nếu sản phẩm có biến thể, số lượng sẽ được tính từ tổng các biến thể</p>
                         </div>
 
-                        <div class="mb-4">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-sm font-semibold">Biến thể (màu/kích thước)</label>
-                                <div class="space-x-2">
-                                    <button type="button" class="text-sm text-teal-600" @click="generateVariantsFromOptions">Tạo từ màu/kích thước</button>
-                                    <button type="button" class="text-sm text-teal-600" @click="addVariantRow">Thêm dòng</button>
+                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h3 class="text-sm font-medium text-blue-800">Quản lý biến thể</h3>
+                                    <div class="mt-2 text-sm text-blue-700">
+                                        <p v-if="isEditing && form.id">
+                                            Sau khi lưu sản phẩm, bạn có thể quản lý biến thể tại 
+                                            <a :href="`/admin/product-variants?product_id=${form.id}`" target="_blank" class="underline font-semibold">
+                                                trang quản lý biến thể
+                                            </a>
+                                        </p>
+                                        <p v-else>
+                                            Sau khi tạo sản phẩm, bạn có thể thêm biến thể tại 
+                                            <a href="/admin/product-variants" target="_blank" class="underline font-semibold">
+                                                trang quản lý biến thể
+                                            </a>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mt-2 overflow-x-auto">
-                                <table class="table-auto w-full border-collapse border border-gray-200">
+                        </div>
+
+                        <!-- Optional: Quick variant creation (simplified) -->
+                        <div v-if="isEditing && form.id" class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-semibold">Tạo biến thể nhanh (tùy chọn)</label>
+                                <button type="button" class="text-sm text-teal-600" @click="addVariantRow">+ Thêm dòng</button>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-2">Bạn có thể tạo một vài biến thể cơ bản ở đây, hoặc quản lý chi tiết tại trang biến thể</p>
+                            <div v-if="form.variants && form.variants.length > 0" class="mt-2 overflow-x-auto">
+                                <table class="table-auto w-full border-collapse border border-gray-200 text-sm">
                                     <thead>
                                         <tr class="bg-gray-100 text-left">
                                             <th class="border border-gray-300 px-2 py-1">Màu</th>
@@ -169,24 +196,25 @@
                                     <tbody>
                                         <tr v-for="(v, idx) in form.variants" :key="idx">
                                             <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.color" class="w-full p-1 border rounded" placeholder="VD: Đen" />
+                                                <input type="text" v-model="v.color" class="w-full p-1 border rounded text-sm" placeholder="VD: Đen" />
                                             </td>
                                             <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.size" class="w-full p-1 border rounded" placeholder="VD: 41" />
+                                                <input type="text" v-model="v.size" class="w-full p-1 border rounded text-sm" placeholder="VD: S" />
                                             </td>
                                             <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.sku" class="w-full p-1 border rounded" placeholder="Tùy chọn" />
+                                                <input type="text" v-model="v.sku" class="w-full p-1 border rounded text-sm" placeholder="Tùy chọn" />
                                             </td>
                                             <td class="border border-gray-300 px-2 py-1">
-                                                <input type="number" min="0" v-model.number="v.quantity" class="w-full p-1 border rounded" />
+                                                <input type="number" min="0" v-model.number="v.quantity" class="w-full p-1 border rounded text-sm" />
                                             </td>
                                             <td class="border border-gray-300 px-2 py-1 text-center">
-                                                <button type="button" class="text-red-600" @click="removeVariantRow(idx)">Xóa</button>
+                                                <button type="button" class="text-red-600 text-xs" @click="removeVariantRow(idx)">Xóa</button>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <p v-else class="text-xs text-gray-400 italic">Chưa có biến thể nào. Click "Thêm dòng" để tạo.</p>
                         </div>
 
                         <div class="mb-4 flex items-center">
@@ -256,7 +284,12 @@ export default {
     methods: {
         async fetchProducts() {
             try {
-                const response = await axios.get("http://127.0.0.1:8000/api/products", { params: { page: this.page, per_page: this.perPage } });
+                const response = await axios.get("http://127.0.0.1:8000/api/products", { 
+                    params: { 
+                        page: this.page, 
+                        per_page: this.perPage 
+                    } 
+                });
                 this.products = response.data;
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -264,6 +297,11 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        getQuantityClass(quantity) {
+            if (quantity <= 0) return 'text-red-600 font-bold';
+            if (quantity < 10) return 'text-yellow-600 font-bold';
+            return 'text-green-600';
         },
         addVariantRow() {
             if (!Array.isArray(this.form.variants)) this.form.variants = [];
