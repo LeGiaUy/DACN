@@ -44,9 +44,19 @@ class BrandController extends Controller
         // Sort
         $sortBy = $request->get('sort', 'created_at');
         $sortOrder = $request->get('order', 'desc');
+        
+        // Handle price_desc special case
+        if ($sortBy === 'price_desc') {
+            $sortBy = 'price';
+            $sortOrder = 'desc';
+        } elseif ($sortBy === 'price') {
+            // Default to ascending for price if no order specified
+            $sortOrder = $request->get('order', 'asc');
+        }
+        
         $query->orderBy($sortBy, $sortOrder);
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(12)->appends($request->query());
         $categories = $brand->products()->with('category')->get()->pluck('category')->unique('id');
 
         return Inertia::render('User/Brands/Show', [
