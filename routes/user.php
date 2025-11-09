@@ -6,6 +6,7 @@ use App\Http\Controllers\User\ProductController;
 use App\Http\Controllers\User\CategoryController;
 use App\Http\Controllers\User\BrandController;
 use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\CheckoutController;
 
 // Public routes for users
 Route::get('/', [HomeController::class, 'index'])->name('user.home');
@@ -19,4 +20,12 @@ Route::get('/brands/{brand}', [BrandController::class, 'show'])->name('user.bran
 // Authenticated routes for users
 Route::middleware('auth')->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('user.cart');
+    
+    // Checkout routes
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('user.checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('user.checkout.store');
+    Route::get('/checkout/payment/{order}', [CheckoutController::class, 'payment'])->name('user.checkout.payment');
+    Route::post('/checkout/payment/{order}', [CheckoutController::class, 'processPayment'])->name('user.checkout.processPayment');
+    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('user.checkout.success');
+    Route::get('/checkout/failed/{order}', [CheckoutController::class, 'failed'])->name('user.checkout.failed');
 });

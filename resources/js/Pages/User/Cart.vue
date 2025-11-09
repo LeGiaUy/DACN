@@ -113,9 +113,10 @@
                             </div>
                         </div>
 
-                        <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                        <Link :href="route('user.checkout.index')" 
+                              class="block w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 font-semibold text-center">
                             Thanh toán
-                        </button>
+                        </Link>
 
                         <Link :href="route('user.products.index')" 
                               class="block mt-4 text-center text-blue-600 hover:text-blue-800">
