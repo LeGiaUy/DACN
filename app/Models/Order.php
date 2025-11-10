@@ -19,6 +19,7 @@ class Order extends Model
         'shipping_phone',
         'shipping_address',
         'shipping_email',
+        'shipping_method',
         'notes',
         'subtotal',
         'shipping_fee',
@@ -81,6 +82,32 @@ class Order extends Model
             'paid' => 'Đã thanh toán',
             'failed' => 'Thanh toán thất bại',
             'refunded' => 'Đã hoàn tiền',
+            default => 'Không xác định'
+        };
+    }
+
+    /**
+     * Get payment method display name
+     */
+    public function getPaymentMethodDisplayName(): string
+    {
+        return match($this->payment_method) {
+            'cod' => 'Thanh toán khi nhận hàng',
+            'bank_card' => 'Thẻ ngân hàng',
+            'qr_code' => 'QR Code',
+            default => 'Không xác định'
+        };
+    }
+
+    /**
+     * Get shipping method display name
+     */
+    public function getShippingMethodDisplayName(): string
+    {
+        return match($this->shipping_method ?? 'standard') {
+            'standard' => 'Giao hàng tiết kiệm',
+            'fast' => 'Giao hàng nhanh',
+            'express' => 'Giao hàng hỏa tốc',
             default => 'Không xác định'
         };
     }

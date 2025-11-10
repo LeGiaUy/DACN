@@ -31,9 +31,51 @@
                 </div>
             </div>
 
-            <!-- Payment Form -->
-            <form @submit.prevent="submitPayment" class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-6">Thông tin thẻ thanh toán</h2>
+            <!-- Payment Method Tabs -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button type="button"
+                            @click="paymentType = 'qr_code'"
+                            class="flex-1 px-4 py-3 text-center font-semibold transition"
+                            :class="paymentType === 'qr_code' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'">
+                        QR Code
+                    </button>
+                    <button type="button"
+                            @click="paymentType = 'bank_card'"
+                            class="flex-1 px-4 py-3 text-center font-semibold transition"
+                            :class="paymentType === 'bank_card' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'">
+                        Thẻ ngân hàng
+                    </button>
+                </div>
+
+                <!-- QR Code Payment -->
+                <div v-show="paymentType === 'qr_code'" class="text-center">
+                    <div class="mb-6">
+                        <div class="inline-block p-4 bg-white border-2 border-gray-300 rounded-lg">
+                            <!-- QR Code Placeholder - In production, generate actual QR code -->
+                            <div class="w-64 h-64 bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 rounded mx-auto">
+                                <div class="text-center">
+                                    <svg class="w-32 h-32 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                                    </svg>
+                                    <p class="text-sm text-gray-500 mt-2">QR Code</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">Quét mã QR bằng ứng dụng ngân hàng của bạn để thanh toán</p>
+                    <p class="text-sm text-gray-500 mb-6">Số tiền: <span class="font-bold text-blue-600">{{ formatPrice(order.total) }}</span></p>
+                    <button type="button"
+                            @click="submitQRPayment"
+                            :disabled="processing"
+                            class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                        {{ processing ? 'Đang xử lý...' : 'Đã thanh toán' }}
+                    </button>
+                </div>
+
+                <!-- Bank Card Payment -->
+                <form v-show="paymentType === 'bank_card'" @submit.prevent="submitPayment">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Thông tin thẻ thanh toán</h2>
                 
                 <div class="space-y-4">
                     <div>
@@ -121,7 +163,8 @@
                         </Link>
                     </div>
                 </div>
-            </form>
+                </form>
+            </div>
         </div>
     </UserLayout>
 </template>
@@ -145,6 +188,7 @@ const form = useForm({
 
 const processing = ref(false)
 const currentYear = new Date().getFullYear()
+const paymentType = ref(props.order.payment_method === 'qr_code' ? 'qr_code' : 'bank_card')
 
 const formatPrice = (price) => {
     const numPrice = parseFloat(price) || 0
@@ -173,7 +217,21 @@ const submitPayment = () => {
     
     form.transform((data) => ({
         ...data,
-        card_number: cardNumber
+        card_number: cardNumber,
+        payment_type: 'bank_card'
+    })).post(route('user.checkout.processPayment', props.order.id), {
+        onFinish: () => {
+            processing.value = false
+        }
+    })
+}
+
+const submitQRPayment = () => {
+    processing.value = true
+    
+    form.transform((data) => ({
+        ...data,
+        payment_type: 'qr_code'
     })).post(route('user.checkout.processPayment', props.order.id), {
         onFinish: () => {
             processing.value = false

@@ -66,6 +66,104 @@
                         </div>
                     </div>
 
+                    <!-- Payment Method -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Phương thức thanh toán</h2>
+                        
+                        <div class="space-y-3">
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.payment_method === 'cod' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'">
+                                <input type="radio" 
+                                       v-model="form.payment_method" 
+                                       value="cod"
+                                       class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900">Thanh toán khi nhận hàng (COD)</div>
+                                    <div class="text-sm text-gray-600">Thanh toán bằng tiền mặt khi nhận được hàng</div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.payment_method === 'qr_code' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'">
+                                <input type="radio" 
+                                       v-model="form.payment_method" 
+                                       value="qr_code"
+                                       class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900">QR Code</div>
+                                    <div class="text-sm text-gray-600">Quét mã QR để thanh toán nhanh chóng</div>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.payment_method === 'bank_card' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'">
+                                <input type="radio" 
+                                       v-model="form.payment_method" 
+                                       value="bank_card"
+                                       class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900">Thẻ ngân hàng</div>
+                                    <div class="text-sm text-gray-600">Thanh toán bằng thẻ Visa, Mastercard</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Method -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Phương thức giao hàng</h2>
+                        
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.shipping_method === 'standard' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+                                   @click="updateShippingFee('standard')">
+                                <div class="flex items-center flex-1">
+                                    <input type="radio" 
+                                           v-model="form.shipping_method" 
+                                           value="standard"
+                                           class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                    <div>
+                                        <div class="font-semibold text-gray-900">Giao hàng tiết kiệm</div>
+                                        <div class="text-sm text-gray-600">5-7 ngày làm việc</div>
+                                    </div>
+                                </div>
+                                <div class="font-semibold text-blue-600">{{ formatPrice(20000) }}</div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.shipping_method === 'fast' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+                                   @click="updateShippingFee('fast')">
+                                <div class="flex items-center flex-1">
+                                    <input type="radio" 
+                                           v-model="form.shipping_method" 
+                                           value="fast"
+                                           class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                    <div>
+                                        <div class="font-semibold text-gray-900">Giao hàng nhanh</div>
+                                        <div class="text-sm text-gray-600">2-3 ngày làm việc</div>
+                                    </div>
+                                </div>
+                                <div class="font-semibold text-blue-600">{{ formatPrice(35000) }}</div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                   :class="form.shipping_method === 'express' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+                                   @click="updateShippingFee('express')">
+                                <div class="flex items-center flex-1">
+                                    <input type="radio" 
+                                           v-model="form.shipping_method" 
+                                           value="express"
+                                           class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                    <div>
+                                        <div class="font-semibold text-gray-900">Giao hàng hỏa tốc</div>
+                                        <div class="text-sm text-gray-600">Trong ngày hoặc ngày hôm sau</div>
+                                    </div>
+                                </div>
+                                <div class="font-semibold text-blue-600">{{ formatPrice(50000) }}</div>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Order Items -->
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">Sản phẩm đặt hàng</h2>
@@ -106,11 +204,11 @@
                             </div>
                             <div class="flex justify-between text-gray-600">
                                 <span>Phí vận chuyển:</span>
-                                <span>{{ formatPrice(shippingFee) }}</span>
+                                <span>{{ formatPrice(currentShippingFee) }}</span>
                             </div>
                             <div class="border-t pt-4 flex justify-between text-lg font-bold text-gray-900">
                                 <span>Tổng cộng:</span>
-                                <span class="text-blue-600">{{ formatPrice(total) }}</span>
+                                <span class="text-blue-600">{{ formatPrice(currentTotal) }}</span>
                             </div>
                         </div>
 
@@ -134,7 +232,7 @@
 <script setup>
 import { Link, router, useForm } from '@inertiajs/vue3'
 import UserLayout from '@/Layouts/User/UserLayout.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
     cartItems: Array,
@@ -149,10 +247,29 @@ const form = useForm({
     shipping_phone: props.user?.phone || '',
     shipping_email: props.user?.email || '',
     shipping_address: props.user?.address || '',
+    payment_method: 'cod',
+    shipping_method: 'standard',
     notes: '',
 })
 
 const processing = ref(false)
+
+// Shipping fees
+const shippingFees = {
+    standard: 20000,
+    fast: 35000,
+    express: 50000
+}
+
+// Computed shipping fee
+const currentShippingFee = computed(() => {
+    return shippingFees[form.shipping_method] || 20000
+})
+
+// Computed total
+const currentTotal = computed(() => {
+    return props.subtotal + currentShippingFee.value
+})
 
 const formatPrice = (price) => {
     const numPrice = parseFloat(price) || 0
@@ -160,6 +277,10 @@ const formatPrice = (price) => {
         style: 'currency',
         currency: 'VND'
     }).format(numPrice)
+}
+
+const updateShippingFee = (method) => {
+    form.shipping_method = method
 }
 
 const submitCheckout = () => {
