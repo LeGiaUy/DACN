@@ -27,6 +27,16 @@ class CartController extends Controller
             ->where('user_id', $user->id)
             ->get();
 
+        // Fix prices for items with 0 or null price
+        foreach ($cartItems as $item) {
+            if (!$item->price || $item->price == 0) {
+                if ($item->product && $item->product->price) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                }
+            }
+        }
+
         $total = $cartItems->sum(function ($item) {
             return $item->subtotal;
         });
@@ -121,6 +131,11 @@ class CartController extends Controller
                 }
             }
 
+            // Update price if it's 0 or null (fix for existing items with wrong price)
+            if (!$existingItem->price || $existingItem->price == 0) {
+                $existingItem->price = $product->price;
+            }
+
             $existingItem->quantity = $newQuantity;
             $existingItem->save();
 
@@ -130,6 +145,14 @@ class CartController extends Controller
             ], 200);
         }
 
+        // Get product price - ensure it's not null or 0
+        $productPrice = $product->price ?? 0;
+        if ($productPrice <= 0) {
+            return response()->json([
+                'message' => 'Sản phẩm không có giá. Vui lòng liên hệ quản trị viên.'
+            ], 400);
+        }
+
         // Create new cart item
         $cartItem = CartItem::create([
             'user_id' => $user->id,
@@ -137,7 +160,7 @@ class CartController extends Controller
             'color' => $color,
             'size' => $size,
             'quantity' => $requestedQuantity,
-            'price' => $product->price,
+            'price' => $productPrice,
         ]);
 
         return response()->json([

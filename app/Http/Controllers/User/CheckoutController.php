@@ -32,6 +32,25 @@ class CheckoutController extends Controller
             return redirect()->route('user.cart')->with('error', 'Giỏ hàng của bạn đang trống');
         }
 
+        // Fix prices for items with 0 or null price
+        $needsRefresh = false;
+        foreach ($cartItems as $item) {
+            if (!$item->price || $item->price == 0) {
+                if ($item->product && $item->product->price) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                    $needsRefresh = true;
+                }
+            }
+        }
+
+        // Refresh collection if prices were updated
+        if ($needsRefresh) {
+            $cartItems = CartItem::with(['product.category', 'product.brand'])
+                ->where('user_id', $user->id)
+                ->get();
+        }
+
         $subtotal = $cartItems->sum(function ($item) {
             return $item->subtotal;
         });
@@ -78,6 +97,25 @@ class CheckoutController extends Controller
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('user.cart')->with('error', 'Giỏ hàng của bạn đang trống');
+        }
+
+        // Fix prices for items with 0 or null price
+        $needsRefresh = false;
+        foreach ($cartItems as $item) {
+            if (!$item->price || $item->price == 0) {
+                if ($item->product && $item->product->price) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                    $needsRefresh = true;
+                }
+            }
+        }
+
+        // Refresh collection if prices were updated
+        if ($needsRefresh) {
+            $cartItems = CartItem::with('product')
+                ->where('user_id', $user->id)
+                ->get();
         }
 
         $subtotal = $cartItems->sum(function ($item) {

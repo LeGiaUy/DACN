@@ -347,9 +347,10 @@ const addToCart = async () => {
 }
 
 const formatPrice = (price) => {
+    const numPrice = parseFloat(price) || 0
     return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
         currency: 'VND'
-    }).format(price)
+    }).format(numPrice)
 }
 </script>

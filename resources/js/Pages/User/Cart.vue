@@ -154,10 +154,11 @@ const clearing = ref(false)
 const message = ref(null)
 
 const formatPrice = (price) => {
+    const numPrice = parseFloat(price) || 0
     return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
         currency: 'VND'
-    }).format(price)
+    }).format(numPrice)
 }
 
 const showMessage = (type, text) => {

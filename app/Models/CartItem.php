@@ -23,6 +23,11 @@ class CartItem extends Model
         'price' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'subtotal',
+        'actual_price',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -34,11 +39,28 @@ class CartItem extends Model
     }
 
     /**
+     * Get the actual price (from cart item or product)
+     */
+    public function getActualPriceAttribute()
+    {
+        // If price is 0 or null, get from product
+        if (!$this->price || $this->price == 0) {
+            $this->loadMissing('product');
+            if ($this->product && $this->product->price) {
+                return $this->product->price;
+            }
+            return 0;
+        }
+        return $this->price;
+    }
+
+    /**
      * Get subtotal for this cart item
      */
     public function getSubtotalAttribute()
     {
-        return $this->price * $this->quantity;
+        $price = $this->actual_price;
+        return $price * $this->quantity;
     }
 }
 
