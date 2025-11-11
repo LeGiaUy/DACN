@@ -7,6 +7,7 @@ use App\Http\Controllers\User\CategoryController;
 use App\Http\Controllers\User\BrandController;
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\CheckoutController;
+use App\Http\Controllers\User\OrderController as UserOrderController;
 
 // Public routes for users
 Route::get('/', [HomeController::class, 'index'])->name('user.home');
@@ -28,4 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/payment/{order}', [CheckoutController::class, 'processPayment'])->name('user.checkout.processPayment');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('user.checkout.success');
     Route::get('/checkout/failed/{order}', [CheckoutController::class, 'failed'])->name('user.checkout.failed');
+
+    // Orders
+    Route::get('/orders', [UserOrderController::class, 'index'])->name('user.orders.index');
+    Route::get('/orders/{order}', [UserOrderController::class, 'show'])->name('user.orders.show');
+    Route::post('/orders/{order}/cancel', [UserOrderController::class, 'cancel'])->name('user.orders.cancel');
 });

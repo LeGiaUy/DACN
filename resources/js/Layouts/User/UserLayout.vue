@@ -33,6 +33,11 @@
                               class="px-3 py-2 text-sm font-medium">
                             Thương hiệu
                         </Link>
+                        <Link v-if="$page.props.auth.user" :href="route('user.orders.index')" 
+                              :class="route().current('user.orders.*') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'"
+                              class="px-3 py-2 text-sm font-medium">
+                            Đơn hàng
+                        </Link>
                     </nav>
 
                     <!-- Search and User menu -->
@@ -76,6 +81,9 @@
                             <div v-show="showUserMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                                 <Link :href="route('profile.edit')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     Hồ sơ
+                                </Link>
+                                <Link :href="route('user.orders.index')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Đơn hàng của tôi
                                 </Link>
                                 <Link :href="route('dashboard')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     Admin Dashboard

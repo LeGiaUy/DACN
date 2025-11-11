@@ -8,6 +8,7 @@ use App\Http\Controllers\Backend\BrandController;
 use App\Http\Controllers\Backend\ProductController;
 use App\Http\Controllers\Backend\ProductVariantController;
 use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\Backend\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\CartController as ApiCartController;
 use Inertia\Inertia;
 
@@ -28,6 +29,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('product-variants', ProductVariantController::class);
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+        
+        // Orders
+        Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
+        Route::patch('orders/{order}/payment-status', [AdminOrderController::class, 'updatePaymentStatus'])->name('orders.update-payment-status');
     });
 
     // Session-authenticated API-style cart endpoints

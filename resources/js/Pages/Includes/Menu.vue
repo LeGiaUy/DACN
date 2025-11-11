@@ -31,6 +31,9 @@
                 <li>
                     <Link :href="route('admin.product-variants.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Biến thể</Link>
                 </li>
+                <li>
+                    <Link :href="route('admin.orders.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Đơn hàng</Link>
+                </li>
             </ul>
         </div>
     </div>
