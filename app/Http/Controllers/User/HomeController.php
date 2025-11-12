@@ -13,6 +13,13 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // Lấy sản phẩm mới nhất (HÀNG MỚI VỀ)
+        $newProducts = Product::with(['category', 'brand'])
+            ->orderBy('created_at', 'desc')
+            ->limit(16)
+            ->get();
+            
+        // Lấy sản phẩm nổi bật
         $featuredProducts = Product::with(['category', 'brand'])
             ->where('is_featured', true)
             ->limit(8)
@@ -22,6 +29,7 @@ class HomeController extends Controller
         $brands = Brand::withCount('products')->get();
 
         return Inertia::render('User/Home', [
+            'newProducts' => $newProducts,
             'featuredProducts' => $featuredProducts,
             'categories' => $categories,
             'brands' => $brands,
