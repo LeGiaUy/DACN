@@ -1,104 +1,175 @@
 <template>
     <UserLayout>
-        <!-- Hero Section -->
-        <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-                <div class="text-center">
-                    <h1 class="text-4xl md:text-6xl font-bold mb-6">
-                        Chào mừng đến với DACN Store
-                    </h1>
-                    <p class="text-xl md:text-2xl mb-8 text-blue-100">
-                        Khám phá những sản phẩm chất lượng cao với giá cả hợp lý
-                    </p>
-                    <Link :href="route('user.products.index')" 
-                          class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-300">
-                        Mua sắm ngay
-                    </Link>
+        <!-- Banner Carousel Section -->
+        <section class="relative">
+            <div class="overflow-hidden">
+                <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: `translateX(-${currentBanner * 100}%)` }">
+                    <div v-for="(banner, index) in banners" :key="index" 
+                         class="min-w-full h-96 md:h-[500px] relative">
+                        <img :src="banner.image" :alt="banner.alt" 
+                             class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+            <!-- Banner Navigation -->
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                <button v-for="(banner, index) in banners" :key="index"
+                        @click="currentBanner = index"
+                        :class="[
+                            'w-3 h-3 rounded-full transition-all',
+                            currentBanner === index ? 'bg-white w-8' : 'bg-white/50'
+                        ]">
+                </button>
+            </div>
+            <!-- Previous/Next buttons -->
+            <button @click="prevBanner" 
+                    class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button @click="nextBanner" 
+                    class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </section>
+
+        <!-- Service Highlights -->
+        <section class="bg-white py-6 border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-1">Giao hàng toàn quốc</h3>
+                        <p class="text-sm text-gray-600">Freeship cho đơn hàng từ 299k</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-1">30 ngày đổi trả</h3>
+                        <p class="text-sm text-gray-600">Với bất kì lý do gì</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-1">Chất lượng đảm bảo</h3>
+                        <p class="text-sm text-gray-600">Sản phẩm chính hãng</p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Featured Products -->
-        <section class="py-16 bg-white">
+        <!-- HÀNG MỚI VỀ Section -->
+        <section class="py-12 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Sản phẩm nổi bật</h2>
-                    <p class="text-lg text-gray-600">Những sản phẩm được yêu thích nhất</p>
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">HÀNG MỚI VỀ</h2>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div v-for="product in featuredProducts" :key="product.id" 
-                         class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                        <div class="aspect-w-16 aspect-h-9">
-                            <img :src="product.img_url || '/images/placeholder.jpg'" 
-                                 :alt="product.name"
-                                 class="w-full h-48 object-cover">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ product.name }}</h3>
-                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-2xl font-bold text-blue-600">{{ formatPrice(product.price) }}</span>
-                                <Link :href="route('user.products.show', product.id)" 
-                                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                                    Xem chi tiết
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    <div v-for="product in newProducts" :key="product.id" 
+                         class="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col">
+                        <div class="relative w-full aspect-square overflow-hidden bg-gray-100">
+                            <Link :href="route('user.products.show', product.id)" class="block w-full h-full">
+                                <img :src="product.img_url || '/images/placeholder.jpg'" 
+                                     :alt="product.name"
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                            </Link>
+                            <!-- Discount Badge -->
+                            <div v-if="product.discount_percent" 
+                                 class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                -{{ product.discount_percent }}%
+                            </div>
+                            <!-- Quick View Button -->
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <Link :href="route('user.products.show', product.id)"
+                                      class="bg-white text-gray-900 px-4 py-2 rounded font-semibold hover:bg-gray-100">
+                                    Chọn sản phẩm
                                 </Link>
+                            </div>
+                        </div>
+                        <div class="p-3 md:p-4 flex flex-col flex-1">
+                            <Link :href="route('user.products.show', product.id)" class="flex-1 flex flex-col">
+                                <h3 class="text-sm md:text-base font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] hover:text-blue-600">
+                                    {{ product.name }}
+                                </h3>
+                            </Link>
+                            <div class="flex items-center gap-2 mt-auto">
+                                <span v-if="product.original_price" class="text-sm text-gray-400 line-through">
+                                    {{ formatPrice(product.original_price) }}
+                                </span>
+                                <span class="text-base md:text-lg font-bold text-blue-700">
+                                    {{ formatPrice(product.price) }}
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center mt-12">
+                <div class="text-center mt-10">
                     <Link :href="route('user.products.index')" 
-                          class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-300">
+                          class="inline-block bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition duration-300">
                         Xem tất cả sản phẩm
                     </Link>
                 </div>
             </div>
         </section>
 
-        <!-- Categories -->
-        <section class="py-16 bg-gray-50">
+        <!-- Featured Products Section (if needed) -->
+        <section v-if="featuredProducts.length > 0" class="py-12 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Danh mục sản phẩm</h2>
-                    <p class="text-lg text-gray-600">Khám phá theo danh mục yêu thích</p>
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Sản phẩm nổi bật</h2>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    <Link v-for="category in categories" :key="category.id" 
-                          :href="route('user.categories.show', category.id)"
-                          class="bg-white rounded-lg p-6 text-center hover:shadow-lg transition duration-300">
-                        <div class="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                            </svg>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    <div v-for="product in featuredProducts" :key="product.id" 
+                         class="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col">
+                        <div class="relative w-full aspect-square overflow-hidden bg-gray-100">
+                            <Link :href="route('user.products.show', product.id)" class="block w-full h-full">
+                                <img :src="product.img_url || '/images/placeholder.jpg'" 
+                                     :alt="product.name"
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                            </Link>
+                            <div v-if="product.discount_percent" 
+                                 class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                -{{ product.discount_percent }}%
+                            </div>
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <Link :href="route('user.products.show', product.id)"
+                                      class="bg-white text-gray-900 px-4 py-2 rounded font-semibold hover:bg-gray-100">
+                                    Chọn sản phẩm
+                                </Link>
+                            </div>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">{{ category.name }}</h3>
-                        <p class="text-sm text-gray-600">{{ category.products_count }} sản phẩm</p>
-                    </Link>
-                </div>
-            </div>
-        </section>
-
-        <!-- Brands -->
-        <section class="py-16 bg-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Thương hiệu nổi tiếng</h2>
-                    <p class="text-lg text-gray-600">Những thương hiệu uy tín và chất lượng</p>
-                </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    <Link v-for="brand in brands" :key="brand.id" 
-                          :href="route('user.brands.show', brand.id)"
-                          class="bg-gray-50 rounded-lg p-6 text-center hover:bg-gray-100 transition duration-300">
-                        <div class="w-16 h-16 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <span class="text-lg font-bold text-gray-700">{{ brand.name.charAt(0) }}</span>
+                        <div class="p-3 md:p-4 flex flex-col flex-1">
+                            <Link :href="route('user.products.show', product.id)" class="flex-1 flex flex-col">
+                                <h3 class="text-sm md:text-base font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] hover:text-blue-600">
+                                    {{ product.name }}
+                                </h3>
+                            </Link>
+                            <div class="flex items-center gap-2 mt-auto">
+                                <span v-if="product.original_price" class="text-sm text-gray-400 line-through">
+                                    {{ formatPrice(product.original_price) }}
+                                </span>
+                                <span class="text-base md:text-lg font-bold text-blue-700">
+                                    {{ formatPrice(product.price) }}
+                                </span>
+                            </div>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">{{ brand.name }}</h3>
-                        <p class="text-sm text-gray-600">{{ brand.products_count }} sản phẩm</p>
-                    </Link>
+                    </div>
                 </div>
             </div>
         </section>
@@ -106,13 +177,54 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import UserLayout from '@/Layouts/User/UserLayout.vue'
 
-defineProps({
+const props = defineProps({
+    newProducts: Array,
     featuredProducts: Array,
     categories: Array,
     brands: Array
+})
+
+const currentBanner = ref(0)
+const banners = ref([
+    {
+        image: 'https://via.placeholder.com/1200x500/4F46E5/FFFFFF?text=Banner+1',
+        alt: 'Banner 1'
+    },
+    {
+        image: 'https://via.placeholder.com/1200x500/EC4899/FFFFFF?text=Banner+2',
+        alt: 'Banner 2'
+    },
+    {
+        image: 'https://via.placeholder.com/1200x500/10B981/FFFFFF?text=Banner+3',
+        alt: 'Banner 3'
+    }
+])
+
+let bannerInterval = null
+
+const nextBanner = () => {
+    currentBanner.value = (currentBanner.value + 1) % banners.value.length
+}
+
+const prevBanner = () => {
+    currentBanner.value = currentBanner.value === 0 ? banners.value.length - 1 : currentBanner.value - 1
+}
+
+onMounted(() => {
+    // Auto-play banner
+    bannerInterval = setInterval(() => {
+        nextBanner()
+    }, 5000)
+})
+
+onUnmounted(() => {
+    if (bannerInterval) {
+        clearInterval(bannerInterval)
+    }
 })
 
 const formatPrice = (price) => {
