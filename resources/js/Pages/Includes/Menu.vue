@@ -34,6 +34,9 @@
                 <li>
                     <Link :href="route('admin.orders.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Đơn hàng</Link>
                 </li>
+                <li>
+                    <Link :href="route('admin.users.index')" class="text-gray-900 dark:text-white hover:underline" aria-current="page">Người dùng</Link>
+                </li>
             </ul>
         </div>
     </div>

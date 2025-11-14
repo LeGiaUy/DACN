@@ -35,6 +35,11 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // Update last login timestamp
+        $user->update([
+            'last_login_at' => now(),
+        ]);
+
         // Redirect based on user role (prioritize role over is_admin)
         if ($user->role === 'admin') {
             return redirect()->intended(route('dashboard', absolute: false));

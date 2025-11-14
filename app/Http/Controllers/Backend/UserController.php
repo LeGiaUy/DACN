@@ -15,7 +15,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles')->get();
+        $users = User::orderBy('created_at', 'desc')->get();
         return Inertia::render('Admin/Users/Index', [
             'users' => $users
         ]);
@@ -64,6 +64,7 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
+        $user->load(['orders', 'cartItems']);
         return Inertia::render('Admin/Users/Show', [
             'user' => $user
         ]);

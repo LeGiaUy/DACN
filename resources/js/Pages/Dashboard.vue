@@ -85,6 +85,29 @@ import Menu from './Includes/Menu.vue';
                             </div>
                         </div>
                     </div>
+
+                    <!-- Users Card -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+                                        <span class="text-white font-bold">U</span>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-medium text-gray-900">Người dùng</h3>
+                                    <p class="text-sm text-gray-500">Quản lý người dùng</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <Link :href="route('admin.users.index')" 
+                                      class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                    Xem người dùng →
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Welcome Message -->
@@ -92,7 +115,7 @@ import Menu from './Includes/Menu.vue';
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Chào mừng đến với Admin Dashboard!</h3>
                         <p class="text-gray-600">
-                            Bạn có thể quản lý danh mục, thương hiệu và sản phẩm từ đây. 
+                            Bạn có thể quản lý danh mục, thương hiệu, sản phẩm và người dùng từ đây. 
                             Sử dụng các thẻ bên trên để truy cập vào các chức năng quản lý.
                         </p>
                     </div>
