@@ -124,9 +124,9 @@
                             <div v-show="showUserMenu" 
                                  @click.away="showUserMenu = false"
                                  class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
-                                <Link :href="route('profile.edit')" 
+                                <Link :href="route('user.account.index')" 
                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Hồ sơ
+                                    Quản lý tài khoản
                                 </Link>
                                 <Link :href="route('user.orders.index')" 
                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
