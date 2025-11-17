@@ -19,6 +19,8 @@ const user = usePage().props.auth.user;
 const form = useForm({
     name: user.name,
     email: user.email,
+    phone: user.phone || '',
+    address: user.address || '',
 });
 </script>
 
@@ -67,6 +69,33 @@ const form = useForm({
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div>
+                <InputLabel for="phone" value="Số điện thoại" />
+
+                <TextInput
+                    id="phone"
+                    type="text"
+                    class="mt-1 block w-full"
+                    v-model="form.phone"
+                    autocomplete="tel"
+                />
+
+                <InputError class="mt-2" :message="form.errors.phone" />
+            </div>
+
+            <div>
+                <InputLabel for="address" value="Địa chỉ" />
+
+                <textarea
+                    id="address"
+                    v-model="form.address"
+                    rows="3"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                ></textarea>
+
+                <InputError class="mt-2" :message="form.errors.address" />
             </div>
 
             <div v-if="mustVerifyEmail && user.email_verified_at === null">

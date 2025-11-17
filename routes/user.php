@@ -8,6 +8,7 @@ use App\Http\Controllers\User\BrandController;
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
+use App\Http\Controllers\User\AccountController;
 
 // Public routes for users
 Route::get('/', [HomeController::class, 'index'])->name('user.home');
@@ -34,4 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [UserOrderController::class, 'index'])->name('user.orders.index');
     Route::get('/orders/{order}', [UserOrderController::class, 'show'])->name('user.orders.show');
     Route::post('/orders/{order}/cancel', [UserOrderController::class, 'cancel'])->name('user.orders.cancel');
+    
+    // Account Management
+    Route::get('/account', [AccountController::class, 'index'])->name('user.account.index');
 });
