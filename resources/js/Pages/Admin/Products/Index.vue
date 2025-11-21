@@ -1,86 +1,157 @@
 <template>
-    <div>
-        <Menu></Menu>
-        <h1 style="text-align: center;font-size: 20px;">Quản lý sản phẩm</h1>
-
-        <div v-if="loading" class="text-center text-blue-600">Loading products...</div>
-        <div v-else>
-            <button @click="openModal(null)" class="bg-teal-500 text-white px-4 py-2 rounded mb-4">
-                Thêm sản phẩm
-            </button>
-
-            <table class="table-auto w-full border-collapse border border-gray-200">
-                <thead>
-                    <tr class="bg-gray-100 text-left">
-                        <th class="border border-gray-300 px-4 py-2">Id</th>
-                        <th class="border border-gray-300 px-4 py-2">Tên</th>
-                        <th class="border border-gray-300 px-4 py-2">Giá</th>
-                        <th class="border border-gray-300 px-4 py-2">Danh mục</th>
-                        <th class="border border-gray-300 px-4 py-2">Thương hiệu</th>
-                        <th class="border border-gray-300 px-4 py-2">Hình ảnh</th>
-                        <th class="border border-gray-300 px-4 py-2">Biến thể</th>
-                        <th class="border border-gray-300 px-4 py-2">Số lượng</th>
-                        <th class="border border-gray-300 px-4 py-2">Nổi bật</th>
-                        <th class="border border-gray-300 px-4 py-2">Quản lý</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="product in (products.data || [])" :key="product.id">
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.id }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.name }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.price }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.category?.name }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ product.brand?.name }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">
-                            <template v-if="product.img_url">
-                                <img :src="product.img_url" alt="image" class="inline-block max-h-12 object-contain" />
-                            </template>
-                            <span v-else class="text-gray-400">Không có</span>
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">
-                            <div class="flex flex-col items-center space-y-1">
-                                <span class="text-sm">
-                                    <span class="font-semibold">{{ product.variants?.length || 0 }}</span> biến thể
-                                </span>
-                                <a 
-                                    :href="`/admin/product-variants?product_id=${product.id}`" 
-                                    class="text-xs text-blue-600 hover:text-blue-800 underline">
-                                    Quản lý
-                                </a>
-                            </div>
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">
-                            <span :class="getQuantityClass(product.total_quantity ?? product.quantity)">
-                                {{ product.total_quantity ?? product.quantity }}
-                            </span>
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">
-                            <span v-if="product.is_featured" class="text-green-600">Có</span>
-                            <span v-else class="text-gray-500">Không</span>
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">
-                            <div class="flex flex-col space-y-1">
-                                <button @click="openModal(product)" class="text-teal-500 hover:text-teal-700 text-sm">Sửa</button>
-                                <button @click="deleteProduct(product.id)" class="text-red-500 hover:text-red-700 text-sm">Xóa</button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div v-if="products && products.data && products.data.length" class="mt-4 flex items-center justify-between">
-                <div class="text-sm text-gray-600">
-                    Hiển thị {{ products.from || 0 }} - {{ products.to || 0 }} trong {{ products.total || 0 }} sản phẩm
+    <AdminLayout>
+        <div class="space-y-6">
+            <!-- Page Header -->
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Quản lý sản phẩm</h1>
+                    <p class="mt-2 text-sm text-gray-600">Quản lý sản phẩm và biến thể</p>
                 </div>
-                <div class="flex gap-1">
-                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===1" @click="goToPage((products.current_page||1)-1)">Trước</button>
-                    <button v-for="page in pageNumbers" :key="page" class="px-3 py-1 border rounded" :class="{ 'bg-teal-500 text-white border-teal-500': page === products.current_page }" @click="goToPage(page)">{{ page }}</button>
-                    <button class="px-3 py-1 border rounded" :disabled="(products.current_page||1)===(products.last_page||1)" @click="goToPage((products.current_page||1)+1)">Sau</button>
+                <button 
+                    @click="openModal(null)" 
+                    class="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors duration-200"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Thêm sản phẩm</span>
+                </button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div v-if="!loading && products.data" class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Tổng số sản phẩm</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ products.total || products.data.length }}</p>
+                </div>
+                <div class="rounded-lg border border-purple-100 bg-purple-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Sản phẩm nổi bật</p>
+                    <p class="mt-2 text-2xl font-bold text-purple-600">{{ products.data.filter(p => p.is_featured).length }}</p>
+                </div>
+                <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Sản phẩm có biến thể</p>
+                    <p class="mt-2 text-2xl font-bold text-blue-600">{{ products.data.filter(p => p.variants && p.variants.length > 0).length }}</p>
+                </div>
+                <div class="rounded-lg border border-green-100 bg-green-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Tổng số lượng tồn kho</p>
+                    <p class="mt-2 text-2xl font-bold text-green-600">
+                        {{ products.data.reduce((sum, p) => sum + (p.total_quantity ?? p.quantity ?? 0), 0) }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="loading" class="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                <p class="mt-4 text-gray-600">Đang tải sản phẩm...</p>
+            </div>
+
+            <!-- Products Table -->
+            <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thương hiệu</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nổi bật</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="product in (products.data || [])" :key="product.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    #{{ product.id }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <img v-if="product.img_url" :src="product.img_url" alt="image" class="w-12 h-12 object-cover rounded" />
+                                        <div v-else class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ product.variants?.length || 0 }} biến thể
+                                                <a :href="`/admin/product-variants?product_id=${product.id}`" class="text-teal-600 hover:text-teal-800 ml-2">Quản lý</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ product.category?.name || '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ product.brand?.name || '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="getQuantityClass(product.total_quantity ?? product.quantity)" class="text-sm font-medium">
+                                        {{ product.total_quantity ?? product.quantity }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span v-if="product.is_featured" class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Có</span>
+                                    <span v-else class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">Không</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex justify-end space-x-3">
+                                        <button @click="openModal(product)" class="text-teal-600 hover:text-teal-900">Sửa</button>
+                                        <button @click="deleteProduct(product.id)" class="text-red-600 hover:text-red-900">Xóa</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="products && products.data && products.data.length" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Hiển thị {{ products.from || 0 }} - {{ products.to || 0 }} trong {{ products.total || 0 }} sản phẩm
+                    </div>
+                    <div class="flex gap-2">
+                        <button 
+                            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            :disabled="(products.current_page||1)===1" 
+                            @click="goToPage((products.current_page||1)-1)"
+                        >
+                            Trước
+                        </button>
+                        <button 
+                            v-for="page in pageNumbers" 
+                            :key="page" 
+                            class="px-3 py-2 border rounded-lg" 
+                            :class="{ 'bg-teal-600 text-white border-teal-600': page === products.current_page, 'border-gray-300 hover:bg-gray-50': page !== products.current_page }" 
+                            @click="goToPage(page)"
+                        >
+                            {{ page }}
+                        </button>
+                        <button 
+                            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            :disabled="(products.current_page||1)===(products.last_page||1)" 
+                            @click="goToPage((products.current_page||1)+1)"
+                        >
+                            Sau
+                        </button>
+                    </div>
                 </div>
             </div>
             <!-- Modal for adding/editing products -->
-            <div v-if="isModalOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-                <div class="bg-white p-6 rounded shadow-lg w-11/12 sm:w-3/4 md:w-1/2 max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div 
+                v-if="isModalOpen" 
+                class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 p-4"
+                @click.self="closeModal"
+            >
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                     <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Sửa sản phẩm' : 'Thêm sản phẩm' }}</h2>
 
                     <form @submit.prevent="handleSubmit">
@@ -232,17 +303,17 @@
                 </div>
             </div>
         </div>
-    </div>
+    </AdminLayout>
 </template>
 
 <script>
 import axios from 'axios';
-import Menu from '../../Includes/Menu.vue';
-import TagsInput from '../../../Components/TagsInput.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+import TagsInput from '@/Components/TagsInput.vue';
 
 export default {
     components: {
-        Menu,
+        AdminLayout,
         TagsInput
     },
     data() {

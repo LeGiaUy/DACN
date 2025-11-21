@@ -1,23 +1,44 @@
 <template>
-    <div>
-        <Menu></Menu>
-        <AuthenticatedLayout>
-            <template #header>
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                        Quản lý người dùng
-                    </h2>
-                    <Link :href="route('admin.users.create')" 
-                          class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded">
-                        Thêm người dùng
-                    </Link>
+    <AdminLayout>
+        <div class="space-y-6">
+            <!-- Page Header -->
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Quản lý người dùng</h1>
+                    <p class="mt-2 text-sm text-gray-600">Quản lý tài khoản người dùng</p>
                 </div>
-            </template>
+                <Link :href="route('admin.users.create')" 
+                      class="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Thêm người dùng</span>
+                </Link>
+            </div>
 
-            <div class="py-12">
-                <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <!-- Search and Filter -->
-                    <div class="mb-4 flex gap-4">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Tổng số người dùng</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ users.length }}</p>
+                </div>
+                <div class="rounded-lg border border-green-100 bg-green-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Đang hoạt động</p>
+                    <p class="mt-2 text-2xl font-bold text-green-600">{{ activeUsersCount }}</p>
+                </div>
+                <div class="rounded-lg border border-red-100 bg-red-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Đã khóa</p>
+                    <p class="mt-2 text-2xl font-bold text-red-600">{{ inactiveUsersCount }}</p>
+                </div>
+                <div class="rounded-lg border border-purple-100 bg-purple-50 p-4 shadow-sm">
+                    <p class="text-sm text-gray-500">Quản trị viên</p>
+                    <p class="mt-2 text-2xl font-bold text-purple-600">{{ adminUsersCount }}</p>
+                </div>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex gap-4">
                         <input 
                             v-model="searchQuery"
                             @input="filterUsers"
@@ -45,136 +66,114 @@
                             <option value="inactive">Đã khóa</option>
                         </select>
                     </div>
+                </div>
 
-                    <!-- Users Table -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            ID
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Tên
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Email
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Vai trò
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Số điện thoại
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Trạng thái
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Đăng nhập cuối
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Thao tác
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ user.id }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900">{{ user.name }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">{{ user.email }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="getRoleBadgeClass(user.role)" 
-                                                  class="px-2 py-1 text-xs font-semibold rounded-full">
-                                                {{ getRoleDisplayName(user.role) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ user.phone || '-' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="user.is_active ? 'text-green-600' : 'text-red-600'"
-                                                  class="px-2 py-1 text-xs font-semibold">
-                                                {{ user.is_active ? 'Hoạt động' : 'Đã khóa' }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ formatDate(user.last_login_at) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div class="flex gap-2">
-                                                <Link :href="route('admin.users.show', user.id)" 
-                                                      class="text-blue-600 hover:text-blue-900">
-                                                    Xem
-                                                </Link>
-                                                <Link :href="route('admin.users.edit', user.id)" 
-                                                      class="text-teal-600 hover:text-teal-900">
-                                                    Sửa
-                                                </Link>
-                                                <button 
-                                                    @click="toggleActive(user)"
-                                                    :disabled="user.id === page.props.auth.user.id"
-                                                    :class="user.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'"
-                                                    class="disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    {{ user.is_active ? 'Khóa' : 'Mở khóa' }}
-                                                </button>
-                                                <button 
-                                                    @click="deleteUser(user)"
-                                                    :disabled="user.id === page.props.auth.user.id"
-                                                    class="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Xóa
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+            <!-- Users Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    ID
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Tên
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Email
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Vai trò
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Số điện thoại
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Trạng thái
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Đăng nhập cuối
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Thao tác
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ user.id }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ user.name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ user.email }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="getRoleBadgeClass(user.role)" 
+                                          class="px-2 py-1 text-xs font-semibold rounded-full">
+                                        {{ getRoleDisplayName(user.role) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ user.phone || '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="user.is_active ? 'text-green-600' : 'text-red-600'"
+                                          class="px-2 py-1 text-xs font-semibold">
+                                        {{ user.is_active ? 'Hoạt động' : 'Đã khóa' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ formatDate(user.last_login_at) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex gap-2">
+                                        <Link :href="route('admin.users.show', user.id)" 
+                                              class="text-blue-600 hover:text-blue-900">
+                                            Xem
+                                        </Link>
+                                        <Link :href="route('admin.users.edit', user.id)" 
+                                              class="text-teal-600 hover:text-teal-900">
+                                            Sửa
+                                        </Link>
+                                        <button 
+                                            @click="toggleActive(user)"
+                                            :disabled="user.id === page.props.auth.user.id"
+                                            :class="user.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'"
+                                            class="disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {{ user.is_active ? 'Khóa' : 'Mở khóa' }}
+                                        </button>
+                                        <button 
+                                            @click="deleteUser(user)"
+                                            :disabled="user.id === page.props.auth.user.id"
+                                            class="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Xóa
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                        <!-- Empty State -->
-                        <div v-if="filteredUsers.length === 0" class="text-center py-12">
-                            <p class="text-gray-500">Không tìm thấy người dùng nào.</p>
-                        </div>
-                    </div>
-
-                    <!-- Statistics -->
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Tổng số người dùng</div>
-                            <div class="text-2xl font-bold text-gray-900">{{ users.length }}</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Đang hoạt động</div>
-                            <div class="text-2xl font-bold text-green-600">{{ activeUsersCount }}</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Đã khóa</div>
-                            <div class="text-2xl font-bold text-red-600">{{ inactiveUsersCount }}</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Quản trị viên</div>
-                            <div class="text-2xl font-bold text-purple-600">{{ adminUsersCount }}</div>
-                        </div>
-                    </div>
+                <!-- Empty State -->
+                <div v-if="filteredUsers.length === 0" class="text-center py-12">
+                    <p class="text-gray-500">Không tìm thấy người dùng nào.</p>
                 </div>
             </div>
-        </AuthenticatedLayout>
-    </div>
+        </div>
+    </AdminLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Menu from '../../Includes/Menu.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const page = usePage();
 const props = defineProps({
