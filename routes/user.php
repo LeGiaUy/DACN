@@ -9,9 +9,13 @@ use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\AccountController;
+use App\Http\Controllers\User\AboutController;
+use App\Http\Controllers\User\ContactController;
 
 // Public routes for users
 Route::get('/', [HomeController::class, 'index'])->name('user.home');
+Route::get('/about', [AboutController::class, 'index'])->name('user.about');
+Route::get('/contact', [ContactController::class, 'index'])->name('user.contact');
 Route::get('/products', [ProductController::class, 'index'])->name('user.products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('user.products.show');
 Route::get('/categories', [CategoryController::class, 'index'])->name('user.categories.index');
