@@ -1,75 +1,78 @@
 <template>
-    <div>
-        <Menu></Menu>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <AdminLayout>
+        <div class="space-y-6">
             <!-- Header -->
-            <div class="mb-6">
+            <div class="flex items-center justify-between">
                 <Link :href="route('admin.orders.index')" 
-                      class="text-teal-600 hover:text-teal-800 mb-4 inline-flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                      class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                     Quay lại danh sách
                 </Link>
-                <h1 class="text-2xl font-semibold mb-2">Chi tiết đơn hàng</h1>
-                <p class="text-gray-600">Mã đơn: {{ order.order_number }}</p>
+                <div class="text-right">
+                    <h1 class="text-3xl font-bold text-gray-900">Chi tiết đơn hàng</h1>
+                    <p class="text-sm text-gray-500 mt-1">Mã đơn: {{ order.order_number }}</p>
+                </div>
             </div>
 
             <!-- Order Info Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Thông tin đơn hàng</h2>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Mã đơn:</span>
-                            <span class="font-medium text-gray-900">{{ order.order_number }}</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Thông tin đơn hàng</h2>
+                            <p class="text-sm text-gray-500 mt-1">Theo dõi trạng thái và thanh toán</p>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Trạng thái:</span>
-                            <span :class="getStatusBadgeClass(order.status)" 
-                                  class="px-2 py-1 rounded text-xs font-medium">
-                                {{ getStatusText(order.status) }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Thanh toán:</span>
-                            <span :class="getPaymentStatusBadgeClass(order.payment_status)" 
-                                  class="px-2 py-1 rounded text-xs font-medium">
-                                {{ getPaymentStatusText(order.payment_status) }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Phương thức:</span>
-                            <span class="font-medium text-gray-900">{{ getPaymentMethodText(order.payment_method) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Vận chuyển:</span>
-                            <span class="font-medium text-gray-900">{{ getShippingMethodText(order.shipping_method) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Ngày tạo:</span>
-                            <span class="font-medium text-gray-900">{{ formatDate(order.created_at) }}</span>
-                        </div>
+                        <span :class="getStatusBadgeClass(order.status)" class="px-3 py-1 rounded-full text-xs font-semibold">
+                            {{ getStatusText(order.status) }}
+                        </span>
                     </div>
+                    <dl class="grid grid-cols-1 gap-4 text-sm">
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500">Mã đơn</dt>
+                            <dd class="font-medium text-gray-900">{{ order.order_number }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500">Thanh toán</dt>
+                            <dd>
+                                <span :class="getPaymentStatusBadgeClass(order.payment_status)" class="px-3 py-1 rounded-full text-xs font-semibold">
+                                    {{ getPaymentStatusText(order.payment_status) }}
+                                </span>
+                            </dd>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500">Phương thức</dt>
+                            <dd class="font-medium text-gray-900">{{ getPaymentMethodText(order.payment_method) }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500">Vận chuyển</dt>
+                            <dd class="font-medium text-gray-900">{{ getShippingMethodText(order.shipping_method) }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500">Ngày tạo</dt>
+                            <dd class="font-medium text-gray-900">{{ formatDate(order.created_at) }}</dd>
+                        </div>
+                    </dl>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Thông tin khách hàng</h2>
-                    <div class="space-y-3 text-sm">
+                    <div class="space-y-3 text-sm text-gray-600">
                         <div>
-                            <span class="text-gray-600">Tên:</span>
+                            <p class="text-gray-500">Tên</p>
                             <p class="font-medium text-gray-900">{{ order.user?.name || order.shipping_name }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-600">Số điện thoại:</span>
+                            <p class="text-gray-500">Số điện thoại</p>
                             <p class="font-medium text-gray-900">{{ order.shipping_phone }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-600">Email:</span>
+                            <p class="text-gray-500">Email</p>
                             <p class="font-medium text-gray-900">{{ order.shipping_email || '-' }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-600">Địa chỉ:</span>
+                            <p class="text-gray-500">Địa chỉ</p>
                             <p class="font-medium text-gray-900">{{ order.shipping_address }}</p>
                         </div>
                     </div>
@@ -77,7 +80,7 @@
             </div>
 
             <!-- Status Update -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Cập nhật trạng thái</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -117,67 +120,67 @@
             </div>
 
             <!-- Order Items -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
-                <div class="px-6 py-4 bg-gray-50 border-b">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                     <h2 class="text-lg font-semibold text-gray-900">Sản phẩm đã đặt</h2>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="table-auto w-full border-collapse border border-gray-200">
-                        <thead>
-                            <tr class="bg-gray-100 text-left">
-                                <th class="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">Sản phẩm</th>
-                                <th class="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">Phân loại</th>
-                                <th class="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 text-center">Số lượng</th>
-                                <th class="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 text-right">Giá</th>
-                                <th class="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 text-right">Tạm tính</th>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th class="px-6 py-3">Sản phẩm</th>
+                                <th class="px-6 py-3">Phân loại</th>
+                                <th class="px-6 py-3 text-center">Số lượng</th>
+                                <th class="px-6 py-3 text-right">Giá</th>
+                                <th class="px-6 py-3 text-right">Tạm tính</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr v-for="item in order.items" :key="item.id" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 px-4 py-3">
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="item in order.items" :key="item.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="font-medium text-gray-900">{{ item.product_name }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3">
-                                    <span class="text-sm text-gray-600">
+                                <td class="px-6 py-4">
+                                    <span class="text-sm text-gray-500">
                                         <span v-if="item.color">Màu: {{ item.color }}</span>
                                         <span v-if="item.color && item.size">, </span>
                                         <span v-if="item.size">Size: {{ item.size }}</span>
                                         <span v-if="!item.color && !item.size">-</span>
                                     </span>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-center">
-                                    <span class="text-gray-900">{{ item.quantity }}</span>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="text-sm text-gray-900">{{ item.quantity }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-right">
-                                    <span class="text-gray-900">{{ formatCurrency(item.price) }}</span>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm text-gray-900">{{ formatCurrency(item.price) }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-right">
-                                    <span class="font-medium text-gray-900">{{ formatCurrency(item.subtotal) }}</span>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-semibold text-gray-900">{{ formatCurrency(item.subtotal) }}</span>
                                 </td>
                             </tr>
                         </tbody>
-                        <tfoot class="bg-gray-50">
+                        <tfoot class="bg-gray-50 text-sm">
                             <tr>
-                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right font-medium text-gray-700">
+                                <td colspan="4" class="px-6 py-3 text-right font-medium text-gray-600">
                                     Tạm tính:
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-right font-medium text-gray-900">
+                                <td class="px-6 py-3 text-right font-medium text-gray-900">
                                     {{ formatCurrency(order.subtotal) }}
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right font-medium text-gray-700">
+                                <td colspan="4" class="px-6 py-3 text-right font-medium text-gray-600">
                                     Phí vận chuyển:
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-right font-medium text-gray-900">
+                                <td class="px-6 py-3 text-right font-medium text-gray-900">
                                     {{ formatCurrency(order.shipping_fee) }}
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-900">
+                                <td colspan="4" class="px-6 py-3 text-right font-semibold text-gray-900">
                                     Tổng cộng:
                                 </td>
-                                <td class="border border-gray-300 px-4 py-3 text-right font-bold text-teal-600 text-lg">
+                                <td class="px-6 py-3 text-right font-bold text-teal-600 text-lg">
                                     {{ formatCurrency(order.total) }}
                                 </td>
                             </tr>
@@ -186,13 +189,13 @@
                 </div>
             </div>
         </div>
-    </div>
+    </AdminLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { router, Link } from '@inertiajs/vue3'
-import Menu from '../../Includes/Menu.vue'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
 
 const props = defineProps({
     order: { type: Object, required: true }
