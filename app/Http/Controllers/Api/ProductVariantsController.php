@@ -82,6 +82,7 @@ class ProductVariantsController extends Controller
             'size' => 'nullable|string|max:20',
             'sku' => 'nullable|string|max:100|unique:product_variants,sku',
             'quantity' => 'required|integer|min:0',
+            'img_url' => 'nullable|string|url|max:500',
         ]);
 
         // Check for duplicate variant (product_id + color + size combination)
@@ -97,7 +98,7 @@ class ProductVariantsController extends Controller
         }
 
         $variant = ProductVariant::create($request->only([
-            'product_id', 'color', 'size', 'sku', 'quantity'
+            'product_id', 'color', 'size', 'sku', 'quantity', 'img_url'
         ]));
 
         return response()->json($variant->load(['product.category', 'product.brand']), 201);
@@ -125,6 +126,7 @@ class ProductVariantsController extends Controller
             'size' => 'nullable|string|max:20',
             'sku' => 'nullable|string|max:100|unique:product_variants,sku,' . $id,
             'quantity' => 'required|integer|min:0',
+            'img_url' => 'nullable|string|url|max:500',
         ]);
 
         // Check for duplicate variant (excluding current variant)
@@ -141,7 +143,7 @@ class ProductVariantsController extends Controller
         }
 
         $variant->update($request->only([
-            'product_id', 'color', 'size', 'sku', 'quantity'
+            'product_id', 'color', 'size', 'sku', 'quantity', 'img_url'
         ]));
 
         return response()->json($variant->load(['product.category', 'product.brand']));

@@ -49,6 +49,7 @@ class ProductsController extends Controller
             'variants.*.size' => 'nullable|string|max:20',
             'variants.*.sku' => 'nullable|string|max:100',
             'variants.*.quantity' => 'required_with:variants|integer|min:0',
+            'variants.*.img_url' => 'nullable|string|url|max:500',
         ]);
     
         $product = Product::create($request->only([
@@ -64,6 +65,7 @@ class ProductsController extends Controller
                         'size' => $v['size'] ?? null,
                         'sku' => $v['sku'] ?? null,
                         'quantity' => (int) ($v['quantity'] ?? 0),
+                        'img_url' => $v['img_url'] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
@@ -118,6 +120,7 @@ class ProductsController extends Controller
             'variants.*.size' => 'nullable|string|max:20',
             'variants.*.sku' => 'nullable|string|max:100',
             'variants.*.quantity' => 'required_with:variants|integer|min:0',
+            'variants.*.img_url' => 'nullable|string|url|max:500',
         ]);
 
         $product = Product::findOrFail($id);
@@ -135,6 +138,7 @@ class ProductsController extends Controller
                         'size' => $v['size'] ?? null,
                         'sku' => $v['sku'] ?? null,
                         'quantity' => (int) ($v['quantity'] ?? 0),
+                        'img_url' => $v['img_url'] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
