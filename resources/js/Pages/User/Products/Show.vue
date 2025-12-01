@@ -202,7 +202,7 @@
                     <div v-if="canAddToCart" class="flex items-center space-x-4">
                         <label class="text-sm font-semibold text-gray-900">Số lượng:</label>
                         <div class="flex items-center space-x-2">
-                            <button @click="decreaseQuantity" :disabled="quantity <= 1" 
+                            <button @click="decreaseQuantity" :disabled="quantity <= 1"
                                 class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
                                 -
                             </button>
@@ -218,8 +218,8 @@
                     <!-- Add to Cart -->
                     <div class="space-y-4">
                         <div class="flex space-x-4">
-                            <button @click="addToCart" :disabled="!canAddToCart || addingToCart" 
-                                :class="['flex-1 px-6 py-3 rounded-lg transition duration-300 font-semibold', 
+                            <button @click="addToCart" :disabled="!canAddToCart || addingToCart"
+                                :class="['flex-1 px-6 py-3 rounded-lg transition duration-300 font-semibold',
                                     canAddToCart && !addingToCart ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed']">
                                 {{ addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng' }}
                             </button>
@@ -240,10 +240,10 @@
             <div v-if="relatedProducts.length > 0" class="mt-16">
                 <h2 class="text-2xl font-bold text-gray-900 mb-8">Sản phẩm liên quan</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id" 
+                    <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id"
                          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                         <div class="aspect-w-16 aspect-h-9">
-                            <img :src="relatedProduct.img_url || '/images/placeholder.jpg'" 
+                            <img :src="relatedProduct.img_url || '/images/placeholder.jpg'"
                                  :alt="relatedProduct.name"
                                  class="w-full h-48 object-cover">
                         </div>
@@ -252,7 +252,7 @@
                             <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ relatedProduct.description }}</p>
                             <div class="flex items-center justify-between">
                                 <span class="text-xl font-bold text-blue-600">{{ formatPrice(relatedProduct.price) }}</span>
-                                <Link :href="route('user.products.show', relatedProduct.id)" 
+                                <Link :href="route('user.products.show', relatedProduct.id)"
                                       class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
                                     Xem
                                 </Link>
