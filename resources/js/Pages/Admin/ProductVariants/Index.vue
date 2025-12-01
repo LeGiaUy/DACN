@@ -345,6 +345,22 @@
                             />
                         </div>
 
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL)</label>
+                            <input
+                                type="url"
+                                v-model="form.img_url"
+                                placeholder="https://example.com/image.jpg"
+                                class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">URL hình ảnh cho biến thể này (tùy chọn)</p>
+                            <div v-if="form.img_url" class="mt-2">
+                                <img :src="form.img_url" :alt="`${form.color} ${form.size}`" 
+                                     class="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                                     @error="$event.target.style.display='none'">
+                            </div>
+                        </div>
+
                         <div v-if="formError" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                             {{ formError }}
                         </div>
@@ -402,6 +418,7 @@ export default {
                 size: '',
                 sku: '',
                 quantity: 0,
+                img_url: '',
             },
             filters: {
                 search: '',
@@ -576,6 +593,7 @@ export default {
                     size: variant.size || '',
                     sku: variant.sku || '',
                     quantity: variant.quantity || 0,
+                    img_url: variant.img_url || '',
                 };
             } else {
                 this.isEditing = false;
@@ -586,6 +604,7 @@ export default {
                     size: '',
                     sku: '',
                     quantity: 0,
+                    img_url: '',
                 };
             }
             this.formError = null;
@@ -607,6 +626,7 @@ export default {
                     size: this.form.size || null,
                     sku: this.form.sku || null,
                     quantity: this.form.quantity,
+                    img_url: this.form.img_url || null,
                 };
 
                 if (this.isEditing) {

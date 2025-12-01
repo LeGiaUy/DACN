@@ -5,9 +5,13 @@
             <div class="overflow-hidden">
                 <div class="flex transition-transform duration-500 ease-in-out" :style="{ transform: `translateX(-${currentBanner * 100}%)` }">
                     <div v-for="(banner, index) in banners" :key="index" 
-                         class="min-w-full h-96 md:h-[500px] relative">
-                        <img :src="banner.image" :alt="banner.alt" 
-                             class="w-full h-full object-cover">
+                         class="min-w-full h-96 md:h-[500px] relative bg-gray-100 flex items-center justify-center">
+                        <a v-if="banner.link_url" :href="banner.link_url" class="block w-full h-full flex items-center justify-center">
+                            <img :src="banner.image" :alt="banner.alt" 
+                                 class="w-full h-full object-contain">
+                        </a>
+                        <img v-else :src="banner.image" :alt="banner.alt" 
+                             class="w-full h-full object-contain">
                     </div>
                 </div>
             </div>
@@ -177,7 +181,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import UserLayout from '@/Layouts/User/UserLayout.vue'
 
@@ -185,40 +189,55 @@ const props = defineProps({
     newProducts: Array,
     featuredProducts: Array,
     categories: Array,
-    brands: Array
+    brands: Array,
+    banners: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const currentBanner = ref(0)
-const banners = ref([
-    {
-        image: 'https://via.placeholder.com/1200x500/4F46E5/FFFFFF?text=Banner+1',
-        alt: 'Banner 1'
-    },
-    {
-        image: 'https://via.placeholder.com/1200x500/EC4899/FFFFFF?text=Banner+2',
-        alt: 'Banner 2'
-    },
-    {
-        image: 'https://via.placeholder.com/1200x500/10B981/FFFFFF?text=Banner+3',
-        alt: 'Banner 3'
+
+// Chuyển đổi banners từ database sang format cho carousel
+const banners = computed(() => {
+    if (props.banners && props.banners.length > 0) {
+        return props.banners.map(banner => ({
+            image: banner.image_url,
+            alt: banner.alt_text || banner.title || 'Banner',
+            link_url: banner.link_url || null
+        }))
     }
-])
+    // Fallback nếu không có banner
+    return [
+        {
+            image: 'https://via.placeholder.com/1200x500/4F46E5/FFFFFF?text=Banner+1',
+            alt: 'Banner 1',
+            link_url: null
+        }
+    ]
+})
 
 let bannerInterval = null
 
 const nextBanner = () => {
-    currentBanner.value = (currentBanner.value + 1) % banners.value.length
+    if (banners.value.length > 0) {
+        currentBanner.value = (currentBanner.value + 1) % banners.value.length
+    }
 }
 
 const prevBanner = () => {
-    currentBanner.value = currentBanner.value === 0 ? banners.value.length - 1 : currentBanner.value - 1
+    if (banners.value.length > 0) {
+        currentBanner.value = currentBanner.value === 0 ? banners.value.length - 1 : currentBanner.value - 1
+    }
 }
 
 onMounted(() => {
-    // Auto-play banner
-    bannerInterval = setInterval(() => {
-        nextBanner()
-    }, 5000)
+    // Auto-play banner chỉ khi có banner
+    if (banners.value.length > 1) {
+        bannerInterval = setInterval(() => {
+            nextBanner()
+        }, 5000)
+    }
 })
 
 onUnmounted(() => {

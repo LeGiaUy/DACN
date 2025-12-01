@@ -1,29 +1,28 @@
 <template>
-    <div>
-        <Menu></Menu>
-        <AuthenticatedLayout>
-            <template #header>
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                        Chi tiết người dùng: {{ user.name }}
-                    </h2>
-                    <div class="flex gap-2">
-                        <Link :href="route('admin.users.edit', user.id)" 
-                              class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600">
-                            Chỉnh sửa
-                        </Link>
-                        <Link :href="route('admin.users.index')" 
-                              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                            ← Quay lại
-                        </Link>
-                    </div>
+    <AdminLayout>
+        <div class="space-y-6">
+            <!-- Page Header -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-semibold leading-tight text-gray-800">
+                    Chi tiết người dùng: {{ user.name }}
+                </h2>
+                <div class="flex gap-2">
+                    <Link :href="route('admin.users.edit', user.id)" 
+                          class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600">
+                        Chỉnh sửa
+                    </Link>
+                    <Link :href="route('admin.users.index')" 
+                          class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        ← Quay lại
+                    </Link>
                 </div>
-            </template>
+            </div>
 
-            <div class="py-12">
-                <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
+            <!-- Content -->
+            <div class="py-6">
+                <div class="mx-auto max-w-4xl">
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <div class="p-6 space-y-8">
                             <!-- User Info -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Basic Information -->
@@ -92,7 +91,7 @@
                             </div>
 
                             <!-- Statistics -->
-                            <div class="mt-8 pt-8 border-t border-gray-200">
+                            <div class="pt-8 border-t border-gray-200">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Thống kê</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div class="bg-gray-50 p-4 rounded-lg">
@@ -116,7 +115,7 @@
                             </div>
 
                             <!-- Permissions (if any) -->
-                            <div v-if="user.permissions && user.permissions.length > 0" class="mt-8 pt-8 border-t border-gray-200">
+                            <div v-if="user.permissions && user.permissions.length > 0" class="pt-8 border-t border-gray-200">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Quyền hạn</h3>
                                 <div class="flex flex-wrap gap-2">
                                     <span v-for="permission in user.permissions" :key="permission"
@@ -129,14 +128,13 @@
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
-    </div>
+        </div>
+    </AdminLayout>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Menu from '../../Includes/Menu.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
     user: {

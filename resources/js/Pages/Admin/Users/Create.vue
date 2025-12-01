@@ -1,23 +1,22 @@
 <template>
-    <div>
-        <Menu></Menu>
-        <AuthenticatedLayout>
-            <template #header>
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                        Thêm người dùng mới
-                    </h2>
-                    <Link :href="route('admin.users.index')" 
-                          class="text-gray-600 hover:text-gray-900">
-                        ← Quay lại
-                    </Link>
-                </div>
-            </template>
+    <AdminLayout>
+        <div class="space-y-6">
+            <!-- Page Header -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-semibold leading-tight text-gray-800">
+                    Thêm người dùng mới
+                </h2>
+                <Link :href="route('admin.users.index')" 
+                      class="text-gray-600 hover:text-gray-900">
+                    ← Quay lại
+                </Link>
+            </div>
 
-            <div class="py-12">
-                <div class="mx-auto max-w-2xl sm:px-6 lg:px-8">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <form @submit.prevent="submit" class="p-6">
+            <!-- Form -->
+            <div class="py-6">
+                <div class="mx-auto max-w-2xl">
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <form @submit.prevent="submit" class="p-6 space-y-4">
                             <!-- Name -->
                             <div class="mb-4">
                                 <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
@@ -154,7 +153,7 @@
                             </div>
 
                             <!-- Submit Buttons -->
-                            <div class="flex items-center justify-end gap-4">
+                            <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
                                 <Link :href="route('admin.users.index')" 
                                       class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                                     Hủy
@@ -162,7 +161,7 @@
                                 <button 
                                     type="submit"
                                     :disabled="form.processing"
-                                    class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {{ form.processing ? 'Đang tạo...' : 'Tạo người dùng' }}
                                 </button>
@@ -171,15 +170,14 @@
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
-    </div>
+        </div>
+    </AdminLayout>
 </template>
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Menu from '../../Includes/Menu.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const form = useForm({
     name: '',

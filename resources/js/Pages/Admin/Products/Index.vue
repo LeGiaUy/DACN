@@ -151,155 +151,344 @@
                 class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 p-4"
                 @click.self="closeModal"
             >
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Sửa sản phẩm' : 'Thêm sản phẩm' }}</h2>
-
-                    <form @submit.prevent="handleSubmit">
-                        <div v-if="isEditing" class="mb-4">
-                            <label for="id" class="block text-sm font-semibold">ID</label>
-                            <input type="number" id="id" v-model.number="form.id"
-                                class="w-full p-2 border border-gray-300 rounded" placeholder="ID sản phẩm"
-                                required />
-                            <div v-if="idError" class="text-red-500 text-sm mt-1">{{ idError }}</div>
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">
+                                {{ isEditing ? 'Sửa sản phẩm' : 'Thêm sản phẩm' }}
+                            </h2>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Nhập thông tin cơ bản, phân loại và tồn kho cho sản phẩm.
+                            </p>
                         </div>
-                        <div class="mb-4">
-                            <label for="name" class="block text-sm font-semibold">Tên</label>
-                            <input type="text" id="name" v-model="form.name"
-                                class="w-full p-2 border border-gray-300 rounded" placeholder="Tên sản phẩm"
-                                required />
-                        </div>
+                        <button
+                            type="button"
+                            class="text-gray-400 hover:text-gray-600 transition"
+                            @click="closeModal"
+                        >
+                            <span class="sr-only">Đóng</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-                        <div class="mb-4">
-                            <label for="price" class="block text-sm font-semibold">Giá</label>
-                            <input type="number" id="price" v-model.number="form.price"
-                                class="w-full p-2 border border-gray-300 rounded" placeholder="Giá sản phẩm" />
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="description" class="block text-sm font-semibold">Mô tả</label>
-                            <textarea id="description" v-model="form.description"
-                                class="w-full p-2 border border-gray-300 rounded" placeholder="Mô tả sản phẩm"></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="category_id" class="block text-sm font-semibold">Danh mục</label>
-                            <select id="category_id" v-model.number="form.category_id"
-                                class="w-full p-2 border border-gray-300 rounded">
-                                <option value="">Chọn danh mục</option>
-                                <option v-for="category in categories" :key="category.id" :value="category.id">
-                                    {{ category.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="brand_id" class="block text-sm font-semibold">Thương hiệu</label>
-                            <select id="brand_id" v-model.number="form.brand_id"
-                                class="w-full p-2 border border-gray-300 rounded">
-                                <option value="">Chọn thương hiệu</option>
-                                <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                                    {{ brand.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="img_url" class="block text-sm font-semibold">Ảnh (URL)</label>
-                            <input type="url" id="img_url" v-model="form.img_url"
-                                class="w-full p-2 border border-gray-300 rounded" placeholder="https://..." />
-                            <div v-if="form.img_url" class="mt-2">
-                                <img :src="form.img_url" alt="preview" class="max-h-24 object-contain border rounded p-1" />
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="quantity" class="block text-sm font-semibold">Số lượng (nếu không dùng biến thể)</label>
-                            <input type="number" id="quantity" v-model.number="form.quantity"
-                                class="w-full p-2 border border-gray-300 rounded" min="0" placeholder="Số lượng trong kho" />
-                            <p class="text-xs text-gray-500 mt-1">Nếu sản phẩm có biến thể, số lượng sẽ được tính từ tổng các biến thể</p>
-                        </div>
-
-                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                                    </svg>
+                    <!-- Body -->
+                    <div class="px-6 py-5 overflow-y-auto">
+                        <form @submit.prevent="handleSubmit" class="space-y-6">
+                            <!-- ID chỉ khi sửa -->
+                            <div v-if="isEditing" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="id" class="block text-xs font-medium text-gray-700 mb-1">ID sản phẩm</label>
+                                    <input
+                                        type="number"
+                                        id="id"
+                                        v-model.number="form.id"
+                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                        placeholder="ID sản phẩm"
+                                        required
+                                    />
+                                    <div v-if="idError" class="text-xs text-red-500 mt-1">{{ idError }}</div>
                                 </div>
-                                <div class="ml-3 flex-1">
-                                    <h3 class="text-sm font-medium text-blue-800">Quản lý biến thể</h3>
-                                    <div class="mt-2 text-sm text-blue-700">
-                                        <p v-if="isEditing && form.id">
-                                            Sau khi lưu sản phẩm, bạn có thể quản lý biến thể tại 
-                                            <a :href="`/admin/product-variants?product_id=${form.id}`" target="_blank" class="underline font-semibold">
-                                                trang quản lý biến thể
-                                            </a>
+                            </div>
+
+                            <!-- Thông tin cơ bản -->
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">Thông tin cơ bản</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label for="name" class="block text-xs font-medium text-gray-700 mb-1">Tên sản phẩm</label>
+                                        <input
+                                            type="text"
+                                            id="name"
+                                            v-model="form.name"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                            placeholder="Ví dụ: Áo thun bé gái..."
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label for="price" class="block text-xs font-medium text-gray-700 mb-1">Giá bán (VND)</label>
+                                        <input
+                                            type="number"
+                                            id="price"
+                                            v-model.number="form.price"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                            placeholder="Ví dụ: 199000"
+                                            min="0"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label for="quantity" class="block text-xs font-medium text-gray-700 mb-1">
+                                            Số lượng tổng (không dùng biến thể)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            id="quantity"
+                                            v-model.number="form.quantity"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                            min="0"
+                                            placeholder="Ví dụ: 50"
+                                        />
+                                        <p class="text-[11px] text-gray-500 mt-1">
+                                            Nếu sản phẩm có biến thể, số lượng sẽ được tính từ tổng các biến thể.
                                         </p>
-                                        <p v-else>
-                                            Sau khi tạo sản phẩm, bạn có thể thêm biến thể tại 
-                                            <a href="/admin/product-variants" target="_blank" class="underline font-semibold">
-                                                trang quản lý biến thể
-                                            </a>
-                                        </p>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label for="description" class="block text-xs font-medium text-gray-700 mb-1">Mô tả</label>
+                                        <textarea
+                                            id="description"
+                                            v-model="form.description"
+                                            rows="3"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                                            placeholder="Mô tả ngắn gọn về chất liệu, kiểu dáng, độ tuổi phù hợp..."
+                                        ></textarea>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Optional: Quick variant creation (simplified) -->
-                        <div v-if="isEditing && form.id" class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded">
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="block text-sm font-semibold">Tạo biến thể nhanh (tùy chọn)</label>
-                                <button type="button" class="text-sm text-teal-600" @click="addVariantRow">+ Thêm dòng</button>
+                            <!-- Phân loại & hiển thị -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <h3 class="text-sm font-semibold text-gray-900">Phân loại</h3>
+                                    <div>
+                                        <label for="category_id" class="block text-xs font-medium text-gray-700 mb-1">Danh mục</label>
+                                        <select
+                                            id="category_id"
+                                            v-model.number="form.category_id"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                        >
+                                            <option value="">Chọn danh mục</option>
+                                            <option
+                                                v-for="category in categories"
+                                                :key="category.id"
+                                                :value="category.id"
+                                            >
+                                                {{ category.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="brand_id" class="block text-xs font-medium text-gray-700 mb-1">Thương hiệu</label>
+                                        <select
+                                            id="brand_id"
+                                            v-model.number="form.brand_id"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                        >
+                                            <option value="">Chọn thương hiệu</option>
+                                            <option
+                                                v-for="brand in brands"
+                                                :key="brand.id"
+                                                :value="brand.id"
+                                            >
+                                                {{ brand.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex items-center space-x-2 rounded-lg border border-gray-200 px-3 py-2 bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            id="is_featured"
+                                            v-model="form.is_featured"
+                                            class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                        />
+                                        <div>
+                                            <label for="is_featured" class="text-xs font-medium text-gray-800">Đánh dấu là sản phẩm nổi bật</label>
+                                            <p class="text-[11px] text-gray-500">
+                                                Sản phẩm nổi bật sẽ được ưu tiên hiển thị ở trang chủ.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ảnh & preview -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-900">Hình ảnh</h3>
+                                    <div>
+                                        <label for="img_url" class="block text-xs font-medium text-gray-700 mb-1">Ảnh sản phẩm (URL)</label>
+                                        <input
+                                            type="url"
+                                            id="img_url"
+                                            v-model="form.img_url"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                            placeholder="https://..."
+                                        />
+                                        <p class="text-[11px] text-gray-500 mt-1">
+                                            Bạn có thể dán link ảnh từ CDN / Storage.
+                                        </p>
+                                    </div>
+
+                                    <div v-if="form.img_url" class="mt-2">
+                                        <p class="text-[11px] text-gray-500 mb-1">Xem trước:</p>
+                                        <div class="border border-dashed border-gray-300 rounded-lg p-2 flex items-center justify-center bg-gray-50">
+                                            <img
+                                                :src="form.img_url"
+                                                alt="preview"
+                                                class="max-h-40 object-contain rounded"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-xs text-gray-500 mb-2">Bạn có thể tạo một vài biến thể cơ bản ở đây, hoặc quản lý chi tiết tại trang biến thể</p>
-                            <div v-if="form.variants && form.variants.length > 0" class="mt-2 overflow-x-auto">
-                                <table class="table-auto w-full border-collapse border border-gray-200 text-sm">
-                                    <thead>
-                                        <tr class="bg-gray-100 text-left">
-                                            <th class="border border-gray-300 px-2 py-1">Màu</th>
-                                            <th class="border border-gray-300 px-2 py-1">Kích thước</th>
-                                            <th class="border border-gray-300 px-2 py-1">SKU</th>
-                                            <th class="border border-gray-300 px-2 py-1">Số lượng</th>
-                                            <th class="border border-gray-300 px-2 py-1"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(v, idx) in form.variants" :key="idx">
-                                            <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.color" class="w-full p-1 border rounded text-sm" placeholder="VD: Đen" />
-                                            </td>
-                                            <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.size" class="w-full p-1 border rounded text-sm" placeholder="VD: S" />
-                                            </td>
-                                            <td class="border border-gray-300 px-2 py-1">
-                                                <input type="text" v-model="v.sku" class="w-full p-1 border rounded text-sm" placeholder="Tùy chọn" />
-                                            </td>
-                                            <td class="border border-gray-300 px-2 py-1">
-                                                <input type="number" min="0" v-model.number="v.quantity" class="w-full p-1 border rounded text-sm" />
-                                            </td>
-                                            <td class="border border-gray-300 px-2 py-1 text-center">
-                                                <button type="button" class="text-red-600 text-xs" @click="removeVariantRow(idx)">Xóa</button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+
+                            <!-- Quản lý biến thể -->
+                            <div class="space-y-3">
+                                <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 flex">
+                                    <div class="flex-shrink-0 mt-0.5">
+                                        <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 text-xs text-blue-800">
+                                        <h3 class="font-semibold mb-1">Quản lý biến thể</h3>
+                                        <p v-if="isEditing && form.id">
+                                            Sau khi lưu sản phẩm, bạn có thể quản lý chi tiết biến thể tại
+                                            <a
+                                                :href="`/admin/product-variants?product_id=${form.id}`"
+                                                target="_blank"
+                                                class="underline font-semibold"
+                                            >
+                                                trang quản lý biến thể
+                                            </a>.
+                                        </p>
+                                        <p v-else>
+                                            Sau khi tạo sản phẩm, bạn có thể thêm biến thể tại
+                                            <a
+                                                href="/admin/product-variants"
+                                                target="_blank"
+                                                class="underline font-semibold"
+                                            >
+                                                trang quản lý biến thể
+                                            </a>.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Optional: Quick variant creation (simplified) -->
+                                <div
+                                    v-if="isEditing && form.id"
+                                    class="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-xs font-semibold text-gray-800">Tạo biến thể nhanh (tùy chọn)</p>
+                                            <p class="text-[11px] text-gray-500">
+                                                Dùng cho vài biến thể cơ bản. Quản lý chi tiết hơn tại trang biến thể riêng.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="text-xs font-medium text-teal-600 hover:text-teal-700"
+                                            @click="addVariantRow"
+                                        >
+                                            + Thêm dòng
+                                        </button>
+                                    </div>
+
+                                    <div
+                                        v-if="form.variants && form.variants.length > 0"
+                                        class="mt-2 overflow-x-auto"
+                                    >
+                                        <table class="min-w-full border-collapse border border-gray-200 text-xs">
+                                            <thead>
+                                                <tr class="bg-gray-100 text-left">
+                                                    <th class="border border-gray-300 px-2 py-1">Màu</th>
+                                                    <th class="border border-gray-300 px-2 py-1">Kích thước</th>
+                                                    <th class="border border-gray-300 px-2 py-1">SKU</th>
+                                                    <th class="border border-gray-300 px-2 py-1">Số lượng</th>
+                                                    <th class="border border-gray-300 px-2 py-1 w-12"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr
+                                                    v-for="(v, idx) in form.variants"
+                                                    :key="idx"
+                                                    class="bg-white"
+                                                >
+                                                    <td class="border border-gray-300 px-2 py-1">
+                                                        <input
+                                                            type="text"
+                                                            v-model="v.color"
+                                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                                            placeholder="VD: Đen"
+                                                        />
+                                                    </td>
+                                                    <td class="border border-gray-300 px-2 py-1">
+                                                        <input
+                                                            type="text"
+                                                            v-model="v.size"
+                                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                                            placeholder="VD: S"
+                                                        />
+                                                    </td>
+                                                    <td class="border border-gray-300 px-2 py-1">
+                                                        <input
+                                                            type="text"
+                                                            v-model="v.sku"
+                                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                                            placeholder="Tùy chọn"
+                                                        />
+                                                    </td>
+                                                    <td class="border border-gray-300 px-2 py-1">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            v-model.number="v.quantity"
+                                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                                        />
+                                                    </td>
+                                                    <td class="border border-gray-300 px-2 py-1 text-center">
+                                                        <button
+                                                            type="button"
+                                                            class="text-[11px] text-red-600 hover:text-red-700"
+                                                            @click="removeVariantRow(idx)"
+                                                        >
+                                                            Xóa
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p
+                                        v-else
+                                        class="text-[11px] text-gray-400 italic"
+                                    >
+                                        Chưa có biến thể nào. Click "Thêm dòng" để tạo.
+                                    </p>
+                                </div>
                             </div>
-                            <p v-else class="text-xs text-gray-400 italic">Chưa có biến thể nào. Click "Thêm dòng" để tạo.</p>
-                        </div>
+                        </form>
+                    </div>
 
-                        <div class="mb-4 flex items-center">
-                            <input type="checkbox" id="is_featured" v-model="form.is_featured" class="mr-2" />
-                            <label for="is_featured" class="text-sm font-semibold">Nổi bật</label>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <button type="button" @click="closeModal" class="mr-4 text-gray-500">Hủy</button>
-                            <button type="submit" class="bg-teal-500 text-dark px-4 py-2 rounded">
-                                {{ isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm' }}
-                            </button>
-                        </div>
-                    </form>
+                    <!-- Footer -->
+                    <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-end space-x-3">
+                        <button
+                            type="button"
+                            @click="closeModal"
+                            class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="submit"
+                            form="__dummy" 
+                            class="hidden"
+                        ></button>
+                        <button
+                            type="button"
+                            @click="$el.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))"
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-sm transition-colors"
+                        >
+                            {{ isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

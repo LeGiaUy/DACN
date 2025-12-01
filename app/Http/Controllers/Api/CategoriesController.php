@@ -26,7 +26,15 @@ class CategoriesController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        return Category::create($request->all());
+        // Cột description trong DB đang là NOT NULL,
+        // ConvertEmptyStringsToNull sẽ biến '' thành null,
+        // nên cần ép null thành chuỗi rỗng bằng toán tử ??
+        $data = [
+            'name' => $request->input('name'),
+            'description' => $request->input('description') ?? '',
+        ];
+
+        return Category::create($data);
     }
 
     /**
@@ -46,7 +54,14 @@ class CategoriesController extends Controller
             'name' => 'required|string|max:255', 
             'description' => 'nullable|string'
         ]);
-        $category->update($request->all());
+
+        $data = [
+            'name' => $request->input('name'),
+            'description' => $request->input('description') ?? '',
+        ];
+
+        $category->update($data);
+
         return $category;
     }
 
