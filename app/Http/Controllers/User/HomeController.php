@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Banner;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,12 +28,24 @@ class HomeController extends Controller
             
         $categories = Category::withCount('products')->get();
         $brands = Brand::withCount('products')->get();
+        
+        // Lấy banners đang hoạt động, sắp xếp theo order
+        try {
+            $banners = Banner::where('is_active', true)
+                ->orderBy('order')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } catch (\Exception $e) {
+            // Nếu bảng chưa tồn tại, trả về mảng rỗng
+            $banners = collect([]);
+        }
 
         return Inertia::render('User/Home', [
             'newProducts' => $newProducts,
             'featuredProducts' => $featuredProducts,
             'categories' => $categories,
             'brands' => $brands,
+            'banners' => $banners,
         ]);
     }
 }

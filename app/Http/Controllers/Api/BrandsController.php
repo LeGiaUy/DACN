@@ -23,10 +23,18 @@ class BrandsController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
         ]);
 
-        return Brand::create($request->all());
+        // Cột description trong DB đang là NOT NULL,
+        // ConvertEmptyStringsToNull sẽ biến '' thành null,
+        // nên cần ép null thành chuỗi rỗng để tránh lỗi.
+        $data = [
+            'name' => $request->input('name'),
+            'description' => $request->input('description') ?? '',
+        ];
+
+        return Brand::create($data);
     }
 
     /**
@@ -42,8 +50,18 @@ class BrandsController extends Controller
      */
     public function update(Request $request, Brand $brand)
     {
-        $request->validate(['name' => 'required|string', 'description' => 'required|string']);
-        $brand->update($request->all());
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $data = [
+            'name' => $request->input('name'),
+            'description' => $request->input('description') ?? '',
+        ];
+
+        $brand->update($data);
+
         return $brand;
     }
 
