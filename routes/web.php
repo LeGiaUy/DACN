@@ -9,13 +9,14 @@ use App\Http\Controllers\Backend\ProductController;
 use App\Http\Controllers\Backend\ProductVariantController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\OrderController as AdminOrderController;
+use App\Http\Controllers\Backend\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Backend\BannerController;
 use App\Http\Controllers\Api\CartController as ApiCartController;
 use Inertia\Inertia;
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -24,6 +25,7 @@ Route::middleware('auth')->group(function () {
     
     // Admin routes - chỉ admin mới có thể truy cập
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+        Route::get('dashboard/export-pdf', [AdminDashboardController::class, 'exportPdf'])->name('dashboard.export-pdf');
         Route::resource('categories', CategoryController::class);
         Route::resource('brands', BrandController::class);
         Route::resource('products', ProductController::class);
