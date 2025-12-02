@@ -8,7 +8,7 @@
                     <p class="mt-2 text-sm text-gray-600">Theo dõi tồn kho chi tiết theo màu sắc, kích thước và SKU</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                    <span>Hiển thị {{ variants.data?.length || 0 }} / {{ variants.total || 0 }} biến thể</span>
+                    <span>Hiển thị {{ displayedProductsCount }} / {{ totalProductsCount }} sản phẩm</span>
                     <button
                         @click="openModal(null)"
                         class="inline-flex items-center space-x-2 rounded-lg bg-teal-600 px-4 py-2 text-white shadow-sm transition hover:bg-teal-700"
@@ -59,6 +59,32 @@
                         />
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Danh mục</label>
+                        <select
+                            v-model="filters.category_id"
+                            @change="applyFilters"
+                            class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                        >
+                            <option value="">Tất cả danh mục</option>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">
+                                {{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Thương hiệu</label>
+                        <select
+                            v-model="filters.brand_id"
+                            @change="applyFilters"
+                            class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                        >
+                            <option value="">Tất cả thương hiệu</option>
+                            <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                                {{ brand.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700">Sản phẩm</label>
                         <select
                             v-model="filters.product_id"
@@ -66,30 +92,10 @@
                             class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                         >
                             <option value="">Tất cả sản phẩm</option>
-                            <option v-for="product in products" :key="product.id" :value="product.id">
+                            <option v-for="product in filteredProducts" :key="product.id" :value="product.id">
                                 {{ product.name }}
                             </option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Màu sắc</label>
-                        <input
-                            type="text"
-                            v-model="filters.color"
-                            @input="applyFilters"
-                            placeholder="Lọc theo màu..."
-                            class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Kích thước</label>
-                        <input
-                            type="text"
-                            v-model="filters.size"
-                            @input="applyFilters"
-                            placeholder="Lọc theo size..."
-                            class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                        />
                     </div>
                 </div>
 
@@ -149,67 +155,164 @@
                 <p class="mt-4 text-sm text-gray-500">Đang tải biến thể...</p>
             </div>
 
-            <!-- Variants Table -->
+            <!-- Variants Dropdown Layout -->
             <div v-else class="rounded-lg border border-gray-100 bg-white shadow-sm">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sản phẩm</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Màu sắc</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Kích thước</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Số lượng</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Trạng thái</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                            <tr v-for="variant in variants.data" :key="variant.id" :class="getVariantRowClass(variant)" class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">#{{ variant.id }}</td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ variant.product?.name }}</div>
-                                    <div class="text-xs text-gray-500">
-                                        {{ variant.product?.category?.name || 'Không rõ danh mục' }} •
-                                        {{ variant.product?.brand?.name || 'Không rõ thương hiệu' }}
+                <div v-if="!variants.data || variants.data.length === 0" class="px-6 py-12 text-center text-sm text-gray-500">
+                    Không có biến thể nào phù hợp với bộ lọc hiện tại
+                </div>
+                <div v-else class="divide-y divide-gray-200">
+                    <div
+                        v-for="productGroup in groupedVariants"
+                        :key="productGroup.productId"
+                        class="p-6 hover:bg-gray-50 transition-colors"
+                    >
+                        <!-- Product Header with Dropdown -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4 flex-1">
+                                <img
+                                    :src="productGroup.productImage || '/images/placeholder.jpg'"
+                                    :alt="productGroup.productName"
+                                    class="h-16 w-16 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                                    @error="$event.target.src='/images/placeholder.jpg'"
+                                />
+                                <div class="flex-1">
+                                    <h3 class="text-base font-semibold text-gray-900">{{ productGroup.productName }}</h3>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ productGroup.categoryName || 'Không rõ danh mục' }} •
+                                        {{ productGroup.brandName || 'Không rõ thương hiệu' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-6 mr-4">
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Tổng màu</p>
+                                    <p class="text-base font-semibold text-gray-900">{{ productGroup.totalColors || 0 }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Tổng biến thể</p>
+                                    <p class="text-base font-semibold text-gray-900">{{ productGroup.totalVariants || 0 }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Tổng số lượng</p>
+                                    <p class="text-base font-semibold text-gray-900">{{ new Intl.NumberFormat('vi-VN').format(productGroup.totalQuantity || 0) }}</p>
+                                </div>
+                            </div>
+                            <button
+                                @click="toggleProduct(productGroup.productId)"
+                                class="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                            >
+                                <span>{{ productGroup.isOpen ? 'Thu gọn' : 'Mở rộng' }}</span>
+                                <svg
+                                    class="h-4 w-4 transition-transform"
+                                    :class="{ 'rotate-180': productGroup.isOpen }"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Color Dropdowns (shown when product is expanded) -->
+                        <div v-if="productGroup.isOpen" class="mt-4 space-y-3 pl-20">
+                            <div
+                                v-for="colorGroup in productGroup.colors"
+                                :key="`${productGroup.productId}-${colorGroup.color || 'no-color'}`"
+                                class="border border-gray-200 rounded-lg p-4 bg-white"
+                            >
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <img
+                                            v-if="colorGroup.colorImage"
+                                            :src="colorGroup.colorImage"
+                                            :alt="colorGroup.color || 'Không màu'"
+                                            class="h-12 w-12 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                                            @error="$event.target.style.display='none'"
+                                        />
+                                        <div v-else class="h-12 w-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <span class="text-xs text-gray-400">No img</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-gray-900">
+                                                Màu: {{ colorGroup.color || 'Không màu' }}
+                                            </h4>
+                                            <p class="text-xs text-gray-500">
+                                                {{ colorGroup.variants.length }} biến thể
+                                            </p>
+                                        </div>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ variant.color || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ variant.size || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ variant.sku || '-' }}</td>
-                                <td class="px-6 py-4 text-center text-sm font-semibold">
-                                    <span :class="getQuantityClass(variant.quantity)">{{ variant.quantity }}</span>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span :class="getStatusClass(variant.quantity)" class="inline-flex rounded-full px-3 py-1 text-xs font-semibold">
-                                        {{ getStatusText(variant.quantity) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-right text-sm font-medium">
-                                    <div class="flex justify-end gap-3">
-                                        <button @click="openModal(variant)" class="text-teal-600 hover:text-teal-800">Sửa</button>
-                                        <button @click="deleteVariant(variant.id)" class="text-red-600 hover:text-red-800">Xóa</button>
+                                    <button
+                                        @click="toggleColor(productGroup.productId, colorGroup.color || '')"
+                                        class="flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                                    >
+                                        <span>{{ colorGroup.isOpen ? 'Thu' : 'Mở' }}</span>
+                                        <svg
+                                            class="h-3 w-3 transition-transform"
+                                            :class="{ 'rotate-180': colorGroup.isOpen }"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Size Dropdown (shown when color is expanded) -->
+                                <div v-if="colorGroup.isOpen" class="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
+                                    <div
+                                        v-for="variant in colorGroup.variants"
+                                        :key="variant.id"
+                                        class="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition"
+                                    >
+                                        <div class="flex items-center gap-4 flex-1">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-sm font-medium text-gray-900">
+                                                        Size: {{ variant.size || 'Không size' }}
+                                                    </span>
+                                                    <span v-if="variant.sku" class="text-xs text-gray-500">
+                                                        SKU: {{ variant.sku }}
+                                                    </span>
+                                                </div>
+                                                <div class="mt-1 flex items-center gap-4 text-xs text-gray-500">
+                                                    <span>ID: #{{ variant.id }}</span>
+                                                    <span :class="getQuantityClass(variant.quantity)" class="font-semibold">
+                                                        Số lượng: {{ variant.quantity }}
+                                                    </span>
+                                                    <span :class="getStatusClass(variant.quantity)" class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold">
+                                                        {{ getStatusText(variant.quantity) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2 ml-4">
+                                            <button
+                                                @click="openModal(variant)"
+                                                class="rounded-lg border border-teal-300 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-100 transition"
+                                            >
+                                                Sửa
+                                            </button>
+                                            <button
+                                                @click="deleteVariant(variant.id)"
+                                                class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition"
+                                            >
+                                                Xóa
+                                            </button>
+                                        </div>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!variants.data || variants.data.length === 0">
-                                <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">
-                                    Không có biến thể nào phù hợp với bộ lọc hiện tại
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Pagination -->
                 <div v-if="!loading && variants" class="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 px-6 py-4 bg-gray-50">
                     <div class="text-sm text-gray-600">
-                        <template v-if="variants.total !== undefined">
-                            Hiển thị {{ variants.from || ((variants.current_page - 1) * (variants.per_page || perPage) + 1) || 1 }} - {{ variants.to || Math.min(variants.current_page * (variants.per_page || perPage), variants.total) }} trong {{ variants.total }} biến thể
-                        </template>
-                        <template v-else-if="variants.data && variants.data.length">
-                            Hiển thị {{ variants.data.length }} biến thể
+                        <template v-if="totalProductsCount > 0">
+                            Hiển thị {{ variants.from || 0 }} - {{ variants.to || 0 }} trong {{ totalProductsCount }} sản phẩm
                         </template>
                         <template v-else>
                             Không có dữ liệu
@@ -289,6 +392,49 @@
                     </div>
 
                     <form @submit.prevent="handleSubmit" class="max-h-[70vh] space-y-4 overflow-y-auto px-6 py-4">
+                        <!-- Filter Section in Modal -->
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+                            <h3 class="text-sm font-semibold text-gray-900">Lọc sản phẩm</h3>
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Tìm kiếm</label>
+                                    <input
+                                        type="text"
+                                        v-model="modalFilters.search"
+                                        @input="filterModalProducts"
+                                        placeholder="Tên sản phẩm..."
+                                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Danh mục</label>
+                                    <select
+                                        v-model="modalFilters.category_id"
+                                        @change="filterModalProducts"
+                                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                    >
+                                        <option value="">Tất cả danh mục</option>
+                                        <option v-for="category in categories" :key="category.id" :value="category.id">
+                                            {{ category.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Thương hiệu</label>
+                                    <select
+                                        v-model="modalFilters.brand_id"
+                                        @change="filterModalProducts"
+                                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                    >
+                                        <option value="">Tất cả thương hiệu</option>
+                                        <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                                            {{ brand.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Sản phẩm *</label>
                             <select
@@ -297,10 +443,21 @@
                                 class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                             >
                                 <option value="">Chọn sản phẩm</option>
-                                <option v-for="product in products" :key="product.id" :value="product.id">
+                                <option v-for="product in filteredModalProducts" :key="product.id" :value="product.id">
                                     {{ product.name }}
+                                    <template v-if="product.category || product.brand">
+                                        ({{ product.category?.name || '' }}<template v-if="product.category && product.brand"> • </template>{{ product.brand?.name || '' }})
+                                    </template>
                                 </option>
                             </select>
+                            <div v-if="form.product_id" class="mt-2">
+                                <img
+                                    :src="selectedProductImage"
+                                    :alt="selectedProductName"
+                                    class="h-20 w-20 rounded-lg object-cover border border-gray-200"
+                                    @error="$event.target.style.display='none'"
+                                />
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -405,7 +562,15 @@ export default {
         return {
             variants: { data: [] },
             products: [],
-            statistics: {},
+            categories: [],
+            brands: [],
+            statistics: {
+                total: 0,
+                in_stock: 0,
+                low_stock: 0,
+                out_of_stock: 0,
+                total_quantity: 0,
+            },
             loading: true,
             saving: false,
             isModalOpen: false,
@@ -422,6 +587,8 @@ export default {
             },
             filters: {
                 search: '',
+                category_id: '',
+                brand_id: '',
                 product_id: '',
                 color: '',
                 size: '',
@@ -431,22 +598,159 @@ export default {
                 sort_by: 'id',
                 sort_order: 'desc',
             },
+            modalFilters: {
+                search: '',
+                category_id: '',
+                brand_id: '',
+            },
+            openProducts: new Set(),
+            openColors: new Map(),
             page: 1,
             perPage: 15,
+            productsPerPage: 6,
+            allVariants: [],
         }
     },
     mounted() {
         this.fetchVariants();
         this.fetchProducts();
+        this.fetchCategories();
+        this.fetchBrands();
         this.fetchStatistics();
+    },
+    computed: {
+        filteredProducts() {
+            if (!this.filters.category_id && !this.filters.brand_id && !this.filters.search) {
+                return this.products;
+            }
+            return this.products.filter(p => {
+                const matchCategory = !this.filters.category_id || p.category_id == this.filters.category_id;
+                const matchBrand = !this.filters.brand_id || p.brand_id == this.filters.brand_id;
+                const matchSearch = !this.filters.search || 
+                    (p.name && p.name.toLowerCase().includes(this.filters.search.toLowerCase()));
+                return matchCategory && matchBrand && matchSearch;
+            });
+        },
+        filteredModalProducts() {
+            if (!this.modalFilters.search && !this.modalFilters.category_id && !this.modalFilters.brand_id) {
+                return this.products;
+            }
+            return this.products.filter(p => {
+                const matchCategory = !this.modalFilters.category_id || p.category_id == this.modalFilters.category_id;
+                const matchBrand = !this.modalFilters.brand_id || p.brand_id == this.modalFilters.brand_id;
+                const matchSearch = !this.modalFilters.search || 
+                    (p.name && p.name.toLowerCase().includes(this.modalFilters.search.toLowerCase()));
+                return matchCategory && matchBrand && matchSearch;
+            });
+        },
+        selectedProductImage() {
+            if (!this.form.product_id) return '';
+            const product = this.products.find(p => p.id == this.form.product_id);
+            return product?.img_url || '';
+        },
+        selectedProductName() {
+            if (!this.form.product_id) return '';
+            const product = this.products.find(p => p.id == this.form.product_id);
+            return product?.name || '';
+        },
+        groupedVariants() {
+            if (!this.allVariants || this.allVariants.length === 0) {
+                return [];
+            }
+
+            const productMap = new Map();
+
+            this.allVariants.forEach(variant => {
+                const productId = variant.product_id;
+                const product = variant.product || {};
+                const color = variant.color || '';
+                const colorKey = color || '__no_color__';
+
+                if (!productMap.has(productId)) {
+                    productMap.set(productId, {
+                        productId,
+                        productName: product.name || 'Không rõ tên',
+                        productImage: product.img_url || '',
+                        categoryName: product.category?.name || '',
+                        brandName: product.brand?.name || '',
+                        isOpen: this.openProducts.has(productId),
+                        colors: new Map(),
+                    });
+                }
+
+                const productGroup = productMap.get(productId);
+                if (!productGroup.colors.has(colorKey)) {
+                    // Lấy ảnh từ variant đầu tiên có màu này (ưu tiên variant có img_url)
+                    const colorImage = variant.img_url || null;
+                    productGroup.colors.set(colorKey, {
+                        color: color || null,
+                        colorImage: colorImage,
+                        isOpen: this.openColors.get(`${productId}-${colorKey}`) || false,
+                        variants: [],
+                    });
+                } else {
+                    // Nếu variant này có ảnh mà variant trước chưa có, cập nhật
+                    const colorGroup = productGroup.colors.get(colorKey);
+                    if (!colorGroup.colorImage && variant.img_url) {
+                        colorGroup.colorImage = variant.img_url;
+                    }
+                }
+
+                productGroup.colors.get(colorKey).variants.push(variant);
+            });
+
+            const allProducts = Array.from(productMap.values()).map(group => {
+                // Tính tổng màu, tổng biến thể và tổng số lượng cho sản phẩm này
+                let totalColors = group.colors.size; // Số lượng màu unique
+                let totalVariants = 0;
+                let totalQuantity = 0;
+                
+                group.colors.forEach(colorGroup => {
+                    colorGroup.variants.forEach(variant => {
+                        totalVariants++;
+                        totalQuantity += parseInt(variant.quantity || 0);
+                    });
+                });
+                
+                return {
+                    ...group,
+                    totalColors,
+                    totalVariants,
+                    totalQuantity,
+                    colors: Array.from(group.colors.values()).map(colorGroup => ({
+                        ...colorGroup,
+                        variants: colorGroup.variants.sort((a, b) => {
+                            const aSize = (a.size || '').toString();
+                            const bSize = (b.size || '').toString();
+                            return aSize.localeCompare(bSize);
+                        }),
+                    })),
+                };
+            });
+
+            // Paginate products: 6 products per page
+            const start = (this.page - 1) * this.productsPerPage;
+            const end = start + this.productsPerPage;
+            return allProducts.slice(start, end);
+        },
+        totalProductsCount() {
+            if (!this.allVariants || this.allVariants.length === 0) {
+                return 0;
+            }
+            const uniqueProductIds = new Set(this.allVariants.map(v => v.product_id));
+            return uniqueProductIds.size;
+        },
+        displayedProductsCount() {
+            return this.groupedVariants.length;
+        },
     },
     methods: {
         async fetchVariants() {
             this.loading = true;
             try {
+                // Fetch tất cả variants (không paginate) để group theo product
                 const params = {
-                    page: this.page,
-                    per_page: this.perPage,
+                    per_page: 10000, // Lấy tất cả để group
                     ...this.filters
                 };
                 Object.keys(params).forEach(key => {
@@ -456,35 +760,30 @@ export default {
                 });
 
                 const response = await axios.get("http://127.0.0.1:8000/api/product-variants", { params });
-                this.variants = response.data;
+                this.allVariants = response.data.data || [];
                 
-                // Đảm bảo có các thuộc tính pagination từ Laravel
-                if (this.variants.data && Array.isArray(this.variants.data)) {
-                    // Tính toán last_page nếu chưa có
-                    if (this.variants.total !== undefined && this.variants.total > 0) {
-                        const perPage = this.variants.per_page || parseInt(response.data.per_page) || this.perPage;
-                        this.variants.last_page = this.variants.last_page || Math.ceil(this.variants.total / perPage);
-                    } else {
-                        // Nếu không có total, tính từ data length
-                        this.variants.last_page = this.variants.last_page || 1;
-                    }
-                    
-                    // Đảm bảo current_page có giá trị
-                    this.variants.current_page = parseInt(this.variants.current_page) || parseInt(response.data.current_page) || this.page || 1;
-                    
-                    // Đảm bảo per_page có giá trị
-                    this.variants.per_page = parseInt(this.variants.per_page) || parseInt(response.data.per_page) || this.perPage;
-                    
-                    // Tính from và to nếu chưa có
-                    if (this.variants.total !== undefined) {
-                        const perPage = this.variants.per_page;
-                        this.variants.from = this.variants.from || ((this.variants.current_page - 1) * perPage + 1);
-                        this.variants.to = this.variants.to || Math.min(this.variants.current_page * perPage, this.variants.total);
-                    }
-                }
+                // Tính statistics từ dữ liệu variants đã fetch
+                this.calculateStatistics();
+                
+                // Tính pagination cho products (6 products/page)
+                const uniqueProductIds = new Set(this.allVariants.map(v => v.product_id));
+                const totalProducts = uniqueProductIds.size;
+                const totalPages = Math.ceil(totalProducts / this.productsPerPage);
+                
+                // Giữ lại structure variants để tương thích với code cũ
+                this.variants = {
+                    data: this.allVariants,
+                    total: this.allVariants.length,
+                    current_page: this.page,
+                    last_page: totalPages,
+                    per_page: this.productsPerPage,
+                    from: totalProducts > 0 ? ((this.page - 1) * this.productsPerPage + 1) : 0,
+                    to: Math.min(this.page * this.productsPerPage, totalProducts),
+                };
             } catch (error) {
                 console.error("Error fetching variants:", error);
                 alert('Lỗi khi tải danh sách biến thể');
+                this.allVariants = [];
             } finally {
                 this.loading = false;
             }
@@ -492,17 +791,82 @@ export default {
         async fetchProducts() {
             try {
                 const response = await axios.get("http://127.0.0.1:8000/api/products", { params: { per_page: 1000 } });
-                this.products = response.data.data || [];
+                this.products = (response.data.data || []).map(p => ({
+                    ...p,
+                    category_id: p.category?.id || p.category_id,
+                    brand_id: p.brand?.id || p.brand_id,
+                }));
             } catch (error) {
                 console.error("Error fetching products:", error);
             }
         },
+        calculateStatistics() {
+            if (!this.allVariants || this.allVariants.length === 0) {
+                this.statistics = {
+                    total: 0,
+                    in_stock: 0,
+                    low_stock: 0,
+                    out_of_stock: 0,
+                    total_quantity: 0,
+                };
+                return;
+            }
+
+            let total = this.allVariants.length;
+            let inStock = 0;
+            let lowStock = 0;
+            let outOfStock = 0;
+            let totalQuantity = 0;
+
+            this.allVariants.forEach(variant => {
+                const quantity = parseInt(variant.quantity || 0);
+                totalQuantity += quantity;
+
+                if (quantity > 0) {
+                    inStock++;
+                    if (quantity < 10) {
+                        lowStock++;
+                    }
+                } else {
+                    outOfStock++;
+                }
+            });
+
+            this.statistics = {
+                total: total,
+                in_stock: inStock,
+                low_stock: lowStock,
+                out_of_stock: outOfStock,
+                total_quantity: totalQuantity,
+            };
+        },
         async fetchStatistics() {
+            // Nếu đã có allVariants, tính từ đó
+            if (this.allVariants && this.allVariants.length > 0) {
+                this.calculateStatistics();
+                return;
+            }
+
+            // Nếu chưa có, thử gọi API
             try {
                 const response = await axios.get("http://127.0.0.1:8000/api/product-variants/statistics");
-                this.statistics = response.data;
+                console.log("Statistics response:", response.data);
+                if (response.data && typeof response.data === 'object') {
+                    this.statistics = {
+                        total: response.data.total || 0,
+                        in_stock: response.data.in_stock || 0,
+                        low_stock: response.data.low_stock || 0,
+                        out_of_stock: response.data.out_of_stock || 0,
+                        total_quantity: response.data.total_quantity || 0,
+                    };
+                } else {
+                    this.calculateStatistics();
+                }
             } catch (error) {
                 console.error("Error fetching statistics:", error);
+                console.error("Error details:", error.response?.data || error.message);
+                // Fallback: tính từ allVariants nếu có
+                this.calculateStatistics();
             }
         },
         applyFilters() {
@@ -512,6 +876,8 @@ export default {
         resetFilters() {
             this.filters = {
                 search: '',
+                category_id: '',
+                brand_id: '',
                 product_id: '',
                 color: '',
                 size: '',
@@ -523,6 +889,40 @@ export default {
             };
             this.page = 1;
             this.fetchVariants();
+        },
+        async fetchCategories() {
+            try {
+                const response = await axios.get("http://127.0.0.1:8000/api/categories");
+                this.categories = response.data || [];
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        },
+        async fetchBrands() {
+            try {
+                const response = await axios.get("http://127.0.0.1:8000/api/brands");
+                this.brands = response.data || [];
+            } catch (error) {
+                console.error("Error fetching brands:", error);
+            }
+        },
+        filterModalProducts() {
+            // Computed property sẽ tự động cập nhật
+        },
+        toggleProduct(productId) {
+            if (this.openProducts.has(productId)) {
+                this.openProducts.delete(productId);
+            } else {
+                this.openProducts.add(productId);
+            }
+        },
+        toggleColor(productId, color) {
+            const key = `${productId}-${color || '__no_color__'}`;
+            if (this.openColors.has(key)) {
+                this.openColors.delete(key);
+            } else {
+                this.openColors.set(key, true);
+            }
         },
         goToPage(page) {
             if (page >= 1 && page <= this.variants.last_page) {
@@ -606,6 +1006,11 @@ export default {
                     quantity: 0,
                     img_url: '',
                 };
+                this.modalFilters = {
+                    search: '',
+                    category_id: '',
+                    brand_id: '',
+                };
             }
             this.formError = null;
             this.isModalOpen = true;
@@ -638,8 +1043,7 @@ export default {
                 }
 
                 this.closeModal();
-                this.fetchVariants();
-                this.fetchStatistics();
+                await this.fetchVariants();
             } catch (error) {
                 console.error("Error saving variant:", error);
                 if (error.response?.data?.message) {
@@ -659,8 +1063,7 @@ export default {
             try {
                 await axios.delete(`http://127.0.0.1:8000/api/product-variants/${id}`);
                 alert('Xóa biến thể thành công');
-                this.fetchVariants();
-                this.fetchStatistics();
+                await this.fetchVariants();
             } catch (error) {
                 console.error("Error deleting variant:", error);
                 alert('Lỗi khi xóa biến thể');
