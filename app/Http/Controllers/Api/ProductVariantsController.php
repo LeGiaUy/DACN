@@ -50,6 +50,20 @@ class ProductVariantsController extends Controller
             $query->where('quantity', '<=', 0);
         }
         
+        // Filter by category_id
+        if ($request->filled('category_id')) {
+            $query->whereHas('product', function($q) use ($request) {
+                $q->where('category_id', $request->category_id);
+            });
+        }
+        
+        // Filter by brand_id
+        if ($request->filled('brand_id')) {
+            $query->whereHas('product', function($q) use ($request) {
+                $q->where('brand_id', $request->brand_id);
+            });
+        }
+        
         // Search in product name
         if ($request->filled('search')) {
             $search = $request->search;
