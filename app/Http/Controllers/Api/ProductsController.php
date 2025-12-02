@@ -15,14 +15,43 @@ class ProductsController extends Controller
     public function index(Request $request)
     {
         $perPage = (int) $request->get('per_page', 6);
-        $perPage = max(1, min($perPage, 50));
+        $perPage = max(1, min($perPage, 10000));
         
         $with = ['category', 'brand'];
         if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
             $with[] = 'variants';
         }
         
-        $products = Product::with($with)->paginate($perPage);
+        $query = Product::with($with);
+        
+        // Filter by search (product name)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', '%' . $search . '%');
+        }
+        
+        // Filter by category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        
+        // Filter by brand
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
+        
+        // Filter by status
+        if ($request->filled('status')) {
+            if ($request->status === 'featured') {
+                $query->where('is_featured', true);
+            } elseif ($request->status === 'with_variants') {
+                $query->whereHas('variants');
+            } elseif ($request->status === 'no_variants') {
+                $query->whereDoesntHave('variants');
+            }
+        }
+        
+        $products = $query->paginate($perPage);
         return response()->json($products);
     }
 
