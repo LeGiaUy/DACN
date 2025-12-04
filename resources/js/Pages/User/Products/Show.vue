@@ -44,7 +44,7 @@
                                 :key="index"
                                 @click="selectImage(index)"
                                 :class="[
-                                    'flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer',
+                                    'flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer bg-gray-100 flex items-center justify-center',
                                     currentImageIndex === index
                                         ? 'border-blue-600 ring-2 ring-blue-200 scale-105 shadow-md'
                                         : 'border-gray-200 hover:border-gray-400 hover:scale-105'
@@ -52,17 +52,21 @@
                                 :title="`Hình ${index + 1}`">
                                 <img :src="image"
                                      :alt="`${product.name} - Hình ${index + 1}`"
-                                     class="w-full h-full object-cover">
+                                     class="w-full h-full object-contain"
+                                     @error="handleImageError($event, image)"
+                                     @load="handleImageLoad($event)">
                             </button>
                         </div>
                     </div>
 
                     <!-- Main Image -->
-                    <div class="flex-1 relative aspect-square overflow-hidden rounded-lg bg-gray-100 group">
+                    <div class="flex-1 relative aspect-square overflow-hidden rounded-lg bg-gray-100 group flex items-center justify-center">
                         <img :src="selectedImage"
                              :alt="product.name"
-                             class="w-full h-full object-cover transition-all duration-300 cursor-zoom-in"
-                             @click="openImageModal(selectedImage)">
+                             class="w-full h-full object-contain transition-all duration-300 cursor-zoom-in"
+                             @click="openImageModal(selectedImage)"
+                             @error="handleImageError($event, selectedImage)"
+                             @load="handleImageLoad($event)">
                         <div v-if="currentImageColor" class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-700">
                             Màu: {{ currentImageColor }}
                         </div>
@@ -242,10 +246,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id"
                          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                        <div class="aspect-w-16 aspect-h-9">
+                        <div class="aspect-w-16 aspect-h-9 bg-gray-100 flex items-center justify-center">
                             <img :src="relatedProduct.img_url || '/images/placeholder.jpg'"
                                  :alt="relatedProduct.name"
-                                 class="w-full h-48 object-cover">
+                                 class="w-full h-48 object-contain"
+                                 @error="handleImageError($event, relatedProduct.img_url)"
+                                 @load="handleImageLoad($event)">
                         </div>
                         <div class="p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ relatedProduct.name }}</h3>
@@ -276,6 +282,8 @@
             <img :src="modalImage"
                  :alt="product.name"
                  @click.stop
+                 @error="handleImageError($event, modalImage)"
+                 @load="handleImageLoad($event)"
                  class="max-w-full max-h-[90vh] object-contain rounded-lg">
         </div>
     </UserLayout>
@@ -304,6 +312,41 @@ const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 const showImageModal = ref(false)
 const modalImage = ref('')
+const imageErrors = ref(new Set())
+
+// Handle image load errors
+const handleImageError = (event, imageUrl) => {
+    const img = event.target
+    const originalSrc = imageUrl || img.src
+    
+    // Mark this image URL as errored
+    if (originalSrc && originalSrc !== '/images/placeholder.jpg') {
+        imageErrors.value.add(originalSrc)
+    }
+    
+    // If image fails to load and it's not already placeholder, try placeholder
+    if (img.src !== '/images/placeholder.jpg' && !img.src.includes('placeholder')) {
+        img.src = '/images/placeholder.jpg'
+        img.onerror = () => {
+            // If placeholder also fails, hide the image
+            img.style.display = 'none'
+        }
+    } else {
+        // If placeholder also fails, hide the image
+        img.style.display = 'none'
+    }
+}
+
+// Handle successful image load
+const handleImageLoad = (event) => {
+    const img = event.target
+    // Ensure image is visible
+    img.style.display = ''
+    // Remove from error set if it was there
+    if (img.src && imageErrors.value.has(img.src)) {
+        imageErrors.value.delete(img.src)
+    }
+}
 
 const variants = computed(() => {
     if (!Array.isArray(props.product?.variants)) {
@@ -491,7 +534,8 @@ const productImages = computed(() => {
         images.push('/images/placeholder.jpg')
     }
 
-    return images
+    // Filter out invalid images (those that have errored)
+    return images.filter(img => !imageErrors.value.has(img))
 })
 
 // Get color for current image
@@ -554,9 +598,25 @@ const currentProductImage = computed(() => {
 // Selected image (from gallery)
 const selectedImage = computed(() => {
     if (productImages.value.length > 0 && currentImageIndex.value < productImages.value.length) {
-        return productImages.value[currentImageIndex.value]
+        const img = productImages.value[currentImageIndex.value]
+        // If image has errored, try next one or fallback
+        if (imageErrors.value.has(img)) {
+            // Try next image
+            const nextIndex = (currentImageIndex.value + 1) % productImages.value.length
+            if (nextIndex !== currentImageIndex.value && !imageErrors.value.has(productImages.value[nextIndex])) {
+                return productImages.value[nextIndex]
+            }
+            // Fallback to placeholder
+            return '/images/placeholder.jpg'
+        }
+        return img
     }
-    return currentProductImage.value
+    const currentImg = currentProductImage.value
+    // If current image has errored, use placeholder
+    if (imageErrors.value.has(currentImg)) {
+        return '/images/placeholder.jpg'
+    }
+    return currentImg
 })
 
 // Color to hex mapping for common Vietnamese color names

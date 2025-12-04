@@ -135,7 +135,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center space-x-3">
-                                        <img v-if="product.img_url" :src="product.img_url" alt="image" class="w-12 h-12 object-cover rounded" />
+                                        <img v-if="product.img_url" :src="product.img_url" alt="image" class="w-12 h-12 object-contain rounded bg-gray-100" />
                                         <div v-else class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                                             <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -436,9 +436,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Optional: Quick variant creation (simplified) -->
+                                <!-- Quick variant creation: nhiều màu, nhiều size, số lượng cho mỗi size -->
                                 <div
-                                    v-if="isEditing && form.id"
                                     class="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2"
                                 >
                                     <div class="flex items-center justify-between">
@@ -549,7 +548,7 @@
                         ></button>
                         <button
                             type="button"
-                            @click="$el.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))"
+                            @click="handleSubmit"
                             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-sm transition-colors"
                         >
                             {{ isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm' }}
@@ -763,14 +762,47 @@ export default {
             }
             
             const payload = { ...this.form };
-            // Ensure nullable fields are truly null for backend validation
-            if (!payload.img_url) payload.img_url = null;
-            // Clean variants
+            // Ensure nullable fields are properly formatted
+            if (!payload.img_url || payload.img_url.trim() === '') {
+                payload.img_url = null;
+            }
+            // Ensure description is not empty
+            if (!payload.description || payload.description.trim() === '') {
+                payload.description = '';
+            }
+            // Ensure arrays are properly formatted
+            if (!Array.isArray(payload.colors) || payload.colors.length === 0) {
+                payload.colors = [];
+            }
+            if (!Array.isArray(payload.sizes) || payload.sizes.length === 0) {
+                payload.sizes = [];
+            }
+            // Clean variants: nhiều màu, nhiều size, số lượng cho mỗi size
             if (Array.isArray(payload.variants)) {
                 payload.variants = payload.variants
-                    .filter(v => (v.color || v.size) && v.quantity >= 0)
-                    .map(v => ({ color: v.color || null, size: v.size || null, sku: v.sku || null, quantity: Number(v.quantity || 0) }));
+                    .filter(v => (v.color || v.size) && v.quantity !== null && v.quantity !== undefined)
+                    .map(v => ({ 
+                        color: v.color && v.color.trim() ? v.color.trim() : null, 
+                        size: v.size && v.size.trim() ? v.size.trim() : null, 
+                        sku: v.sku && v.sku.trim() ? v.sku.trim() : null, 
+                        quantity: Number(v.quantity || 0) 
+                    }));
+
+                // Nếu đang thêm sản phẩm mới, bắt buộc phải có ít nhất 1 biến thể
+                if (!this.isEditing && payload.variants.length === 0) {
+                    alert('Vui lòng tạo ít nhất 1 biến thể (màu, size, số lượng) trước khi lưu sản phẩm.');
+                    return;
+                }
+
+                if (payload.variants.length === 0) {
+                    delete payload.variants;
+                }
             } else {
+                // Không có mảng variants
+                if (!this.isEditing) {
+                    alert('Vui lòng tạo ít nhất 1 biến thể (màu, size, số lượng) trước khi lưu sản phẩm.');
+                    return;
+                }
                 delete payload.variants;
             }
 
@@ -811,17 +843,30 @@ export default {
                 const formData = { ...payload };
                 delete formData.id;
                 
-                await axios.post("http://127.0.0.1:8000/api/products", formData);
+                console.log('Sending payload:', formData);
+                
+                const response = await axios.post("http://127.0.0.1:8000/api/products", formData);
                 await this.fetchProducts();
                 alert('Thêm sản phẩm thành công');
             } catch (error) {
                 console.error("Error adding product:", error);
-                if (error.response && error.response.data && error.response.data.errors) {
-                    if (error.response.data.errors.id) {
-                        this.idError = 'ID này đã tồn tại';
+                console.error("Error response:", error.response?.data);
+                
+                if (error.response) {
+                    if (error.response.status === 422 && error.response.data?.errors) {
+                        const errors = error.response.data.errors;
+                        let errorMessage = 'Lỗi validation:\n';
+                        Object.keys(errors).forEach(key => {
+                            errorMessage += `${key}: ${errors[key].join(', ')}\n`;
+                        });
+                        alert(errorMessage);
+                    } else if (error.response.data?.message) {
+                        alert('Lỗi: ' + error.response.data.message);
+                    } else {
+                        alert('Lỗi khi thêm sản phẩm: ' + (error.response.statusText || 'Unknown error'));
                     }
                 } else {
-                    alert('Lỗi khi thêm sản phẩm');
+                    alert('Lỗi khi thêm sản phẩm: ' + (error.message || 'Network error'));
                 }
             }
         },
