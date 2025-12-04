@@ -11,11 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            // Xóa cột size cũ và thêm cột sizes mới
-            $table->dropColumn('size');
-            $table->json('sizes')->nullable();
-        });
+        // Migration này dùng để chuyển từ cột string `size` sang cột JSON `sizes`.
+        // Tuy nhiên trên database mới (như MySQL sau khi chuyển từ SQLite),
+        // có thể bảng `products` KHÔNG còn cột `size` hoặc đã có sẵn `sizes`.
+        //
+        // Vì vậy ta cần kiểm tra trước khi thao tác để tránh lỗi "Can't DROP 'size'".
+
+        if (Schema::hasTable('products')) {
+            // Nếu còn cột `size` thì mới drop
+            if (Schema::hasColumn('products', 'size')) {
+                Schema::table('products', function (Blueprint $table) {
+                    $table->dropColumn('size');
+                });
+            }
+
+            // Nếu chưa có cột `sizes` thì thêm mới
+            if (! Schema::hasColumn('products', 'sizes')) {
+                Schema::table('products', function (Blueprint $table) {
+                    $table->json('sizes')->nullable();
+                });
+            }
+        }
     }
 
     /**
@@ -23,10 +39,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            // Revert lại
-            $table->dropColumn('sizes');
-            $table->string('size')->nullable();
-        });
+        if (Schema::hasTable('products')) {
+            // Nếu có `sizes` thì xóa, sau đó thêm lại `size` dạng string (nếu chưa có)
+            if (Schema::hasColumn('products', 'sizes')) {
+                Schema::table('products', function (Blueprint $table) {
+                    $table->dropColumn('sizes');
+                });
+            }
+
+            if (! Schema::hasColumn('products', 'size')) {
+                Schema::table('products', function (Blueprint $table) {
+                    $table->string('size')->nullable();
+                });
+            }
+        }
     }
 };

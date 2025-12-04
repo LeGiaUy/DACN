@@ -38,6 +38,76 @@ class BrandsController extends Controller
     }
 
     /**
+     * Import brands from CSV file (no external package).
+     *
+     * Expected header: name,description
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $path = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            return response()->json(['message' => 'Không thể đọc file upload'], 422);
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            fclose($handle);
+            return response()->json(['message' => 'File CSV rỗng hoặc không hợp lệ'], 422);
+        }
+
+        $header = array_map(fn ($h) => strtolower(trim($h)), $header);
+
+        $created = 0;
+        $updated = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count(array_filter($row, fn ($v) => $v !== null && $v !== '')) === 0) {
+                continue;
+            }
+
+            $data = array_combine($header, $row);
+            if ($data === false || empty($data['name'])) {
+                continue;
+            }
+
+            // Chuẩn hóa encoding về UTF-8 để tránh lỗi tiếng Việt
+            $data = array_map(function ($value) {
+                return is_string($value)
+                    ? mb_convert_encoding($value, 'UTF-8', 'UTF-8,ISO-8859-1,Windows-1258,Windows-1252')
+                    : $value;
+            }, $data);
+
+            $payload = [
+                'name' => $data['name'],
+                'description' => $data['description'] ?? '',
+            ];
+
+            $brand = Brand::where('name', $payload['name'])->first();
+            if ($brand) {
+                $brand->update($payload);
+                $updated++;
+            } else {
+                Brand::create($payload);
+                $created++;
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'message' => 'Import thương hiệu hoàn tất',
+            'created' => $created,
+            'updated' => $updated,
+        ]);
+    }
+
+    /**
      * Display the specified resource.
      */
     public function show(Brand $brand)
