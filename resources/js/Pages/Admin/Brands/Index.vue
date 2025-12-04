@@ -34,6 +34,39 @@
                 </div>
             </div>
 
+            <!-- Import Brands -->
+            <div class="rounded-lg border border-dashed border-teal-200 bg-teal-50 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-teal-800">Import thương hiệu từ CSV/Excel</p>
+                    <p class="text-xs text-teal-700 mt-1">
+                        Cột bắt buộc: <code>name</code>. Tùy chọn: <code>description</code>. Bạn có thể xuất từ Excel dưới dạng CSV.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        @click="downloadBrandTemplate"
+                        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-teal-400 text-teal-800 bg-white hover:bg-teal-50"
+                    >
+                        Tải file mẫu
+                    </button>
+                    <input
+                        type="file"
+                        accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                        @change="onBrandFileChange"
+                        class="text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-teal-600 file:text-white hover:file:bg-teal-700"
+                    />
+                    <button
+                        type="button"
+                        @click="importBrands"
+                        :disabled="!brandImportFile || importingBrands"
+                        class="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {{ importingBrands ? 'Đang import...' : 'Import' }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Loading State -->
             <div v-if="loading" class="bg-white rounded-lg shadow-sm p-12 text-center">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
@@ -179,6 +212,8 @@ export default {
             error: null,
             isModalOpen: false,
             isEditing: false,
+            brandImportFile: null,
+            importingBrands: false,
             form: {
                 id: null,
                 name: '',
@@ -202,6 +237,40 @@ export default {
                 this.error = "Failed to load brands. Please try again later.";
             } finally {
                 this.loading = false;
+            }
+        },
+        onBrandFileChange(event) {
+            const file = event.target.files[0] || null;
+            this.brandImportFile = file;
+        },
+        downloadBrandTemplate() {
+            const header = 'name,description\n';
+            const example = 'Nike,Thương hiệu thời trang thể thao\n';
+            const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'brands_template.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+        async importBrands() {
+            if (!this.brandImportFile) return;
+            const formData = new FormData();
+            formData.append('file', this.brandImportFile);
+            this.importingBrands = true;
+            try {
+                const response = await axios.post('http://127.0.0.1:8000/api/brands/import', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                alert(response.data?.message || 'Import thương hiệu thành công');
+                this.brandImportFile = null;
+                await this.fetchBrands();
+            } catch (error) {
+                console.error('Error importing brands:', error);
+                alert(error.response?.data?.message || 'Lỗi khi import thương hiệu');
+            } finally {
+                this.importingBrands = false;
             }
         },
         async handleSubmit() {

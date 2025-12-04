@@ -221,5 +221,98 @@ class ProductVariantsController extends Controller
             'total_quantity' => $totalQuantity,
         ]);
     }
+
+    /**
+     * Import product variants from CSV file (no external package).
+     *
+     * Expected header:
+     * product_id,color,size,sku,quantity,img_url
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $path = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            return response()->json(['message' => 'Không thể đọc file upload'], 422);
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            fclose($handle);
+            return response()->json(['message' => 'File CSV rỗng hoặc không hợp lệ'], 422);
+        }
+
+        $header = array_map(fn ($h) => strtolower(trim($h)), $header);
+
+        $created = 0;
+        $updated = 0;
+        $errors = [];
+        $rowNumber = 1;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+            if (count(array_filter($row, fn ($v) => $v !== null && $v !== '')) === 0) {
+                continue;
+            }
+
+            $data = array_combine($header, $row);
+            if ($data === false) {
+                $errors[] = "Dòng {$rowNumber}: số cột không khớp header";
+                continue;
+            }
+
+            // Chuẩn hóa encoding về UTF-8 để tránh lỗi tiếng Việt
+            $data = array_map(function ($value) {
+                return is_string($value)
+                    ? mb_convert_encoding($value, 'UTF-8', 'UTF-8,ISO-8859-1,Windows-1258,Windows-1252')
+                    : $value;
+            }, $data);
+
+            if (empty($data['product_id']) || $data['quantity'] === null || $data['quantity'] === '') {
+                $errors[] = "Dòng {$rowNumber}: thiếu product_id hoặc quantity";
+                continue;
+            }
+
+            try {
+                $payload = [
+                    'product_id' => (int) $data['product_id'],
+                    'color'      => $data['color'] !== '' ? $data['color'] : null,
+                    'size'       => $data['size'] !== '' ? $data['size'] : null,
+                    'sku'        => $data['sku'] !== '' ? $data['sku'] : null,
+                    'quantity'   => (int) $data['quantity'],
+                    'img_url'    => $data['img_url'] !== '' ? $data['img_url'] : null,
+                ];
+
+                $variant = ProductVariant::where('product_id', $payload['product_id'])
+                    ->where('color', $payload['color'])
+                    ->where('size', $payload['size'])
+                    ->first();
+
+                if ($variant) {
+                    $variant->update($payload);
+                    $updated++;
+                } else {
+                    ProductVariant::create($payload);
+                    $created++;
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Dòng {$rowNumber}: " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'message' => 'Import biến thể sản phẩm hoàn tất',
+            'created' => $created,
+            'updated' => $updated,
+            'errors' => $errors,
+        ]);
+    }
 }
 
