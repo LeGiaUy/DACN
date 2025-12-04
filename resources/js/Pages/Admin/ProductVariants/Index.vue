@@ -172,7 +172,7 @@
                                 <img
                                     :src="productGroup.productImage || '/images/placeholder.jpg'"
                                     :alt="productGroup.productName"
-                                    class="h-16 w-16 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                                    class="h-16 w-16 rounded-lg object-contain border border-gray-200 flex-shrink-0 bg-gray-50"
                                     @error="$event.target.src='/images/placeholder.jpg'"
                                 />
                                 <div class="flex-1">
@@ -216,6 +216,19 @@
 
                         <!-- Color Dropdowns (shown when product is expanded) -->
                         <div v-if="productGroup.isOpen" class="mt-4 space-y-3 pl-20">
+                            <!-- Nút thêm biến thể màu -->
+                            <div class="mb-3">
+                                <button
+                                    @click="openModalForColor(productGroup.productId)"
+                                    class="inline-flex items-center gap-2 rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100 transition"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <span>Thêm biến thể màu</span>
+                                </button>
+                            </div>
+                            
                             <div
                                 v-for="colorGroup in productGroup.colors"
                                 :key="`${productGroup.productId}-${colorGroup.color || 'no-color'}`"
@@ -227,7 +240,7 @@
                                             v-if="colorGroup.colorImage"
                                             :src="colorGroup.colorImage"
                                             :alt="colorGroup.color || 'Không màu'"
-                                            class="h-12 w-12 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                                            class="h-12 w-12 rounded-lg object-contain border border-gray-200 flex-shrink-0 bg-gray-50"
                                             @error="$event.target.style.display='none'"
                                         />
                                         <div v-else class="h-12 w-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -261,6 +274,19 @@
 
                                 <!-- Size Dropdown (shown when color is expanded) -->
                                 <div v-if="colorGroup.isOpen" class="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
+                                    <!-- Nút thêm size -->
+                                    <div class="mb-2">
+                                        <button
+                                            @click="openModalForSize(productGroup.productId, colorGroup.color)"
+                                            class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition"
+                                        >
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            <span>Thêm size</span>
+                                        </button>
+                                    </div>
+                                    
                                     <div
                                         v-for="variant in colorGroup.variants"
                                         :key="variant.id"
@@ -380,9 +406,11 @@
                     <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">
-                                {{ isEditing ? 'Sửa biến thể' : 'Thêm biến thể mới' }}
+                                {{ isEditing ? 'Sửa biến thể' : (isAddingMultipleSizes ? 'Thêm nhiều size cho màu' : 'Thêm biến thể mới') }}
                             </h2>
-                            <p class="text-sm text-gray-500">Điền thông tin chi tiết cho biến thể</p>
+                            <p class="text-sm text-gray-500">
+                                {{ isEditing ? 'Điền thông tin chi tiết cho biến thể' : (isAddingMultipleSizes ? 'Thêm nhiều size cùng lúc cho màu đã chọn' : 'Điền thông tin chi tiết cho biến thể') }}
+                            </p>
                         </div>
                         <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -454,67 +482,166 @@
                                 <img
                                     :src="selectedProductImage"
                                     :alt="selectedProductName"
-                                    class="h-20 w-20 rounded-lg object-cover border border-gray-200"
+                                    class="h-20 w-20 rounded-lg object-contain border border-gray-200 bg-gray-50"
                                     @error="$event.target.style.display='none'"
                                 />
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <!-- Form thêm nhiều size (khi thêm size cho màu đã chọn) -->
+                        <div v-if="isAddingMultipleSizes">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Màu sắc</label>
+                                <label class="block text-sm font-medium text-gray-700">Màu sắc *</label>
                                 <input
                                     type="text"
                                     v-model="form.color"
                                     placeholder="VD: Đỏ, Xanh..."
+                                    required
                                     class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                                 />
                             </div>
+
+                            <div class="mt-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Danh sách Size và Số lượng *</label>
+                                    <button
+                                        type="button"
+                                        @click="addSizeRow"
+                                        class="inline-flex items-center gap-1 rounded-lg border border-teal-300 bg-teal-50 px-2 py-1 text-xs font-medium text-teal-700 hover:bg-teal-100 transition"
+                                    >
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span>Thêm dòng</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <div
+                                        v-for="(sizeRow, index) in multipleSizes"
+                                        :key="index"
+                                        class="flex items-center gap-2 p-3 rounded-lg border border-gray-200 bg-gray-50"
+                                    >
+                                        <div class="flex-1">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Size</label>
+                                            <input
+                                                type="text"
+                                                v-model="sizeRow.size"
+                                                placeholder="VD: S, M, L..."
+                                                class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                            />
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Số lượng *</label>
+                                            <input
+                                                type="number"
+                                                v-model.number="sizeRow.quantity"
+                                                min="0"
+                                                placeholder="0"
+                                                class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                            />
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">SKU</label>
+                                            <input
+                                                type="text"
+                                                v-model="sizeRow.sku"
+                                                placeholder="Tùy chọn"
+                                                class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                            />
+                                        </div>
+                                        <div class="pt-5">
+                                            <button
+                                                type="button"
+                                                @click="removeSizeRow(index)"
+                                                :disabled="multipleSizes.length === 1"
+                                                class="rounded-lg border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-xs text-gray-500">Thêm nhiều size cùng lúc cho màu này. Mỗi size sẽ tạo thành một biến thể riêng.</p>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL) - Áp dụng cho tất cả size</label>
+                                <input
+                                    type="url"
+                                    v-model="form.img_url"
+                                    placeholder="https://example.com/image.jpg"
+                                    class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                />
+                                <p class="mt-1 text-xs text-gray-500">URL hình ảnh sẽ được áp dụng cho tất cả các size của màu này (tùy chọn)</p>
+                                <div v-if="form.img_url" class="mt-2 flex items-center justify-center">
+                                    <img :src="form.img_url" :alt="form.color" 
+                                         class="h-24 w-24 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                                         @error="$event.target.style.display='none'">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form thêm/sửa biến thể đơn lẻ (mode thông thường) -->
+                        <div v-else>
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Màu sắc</label>
+                                    <input
+                                        type="text"
+                                        v-model="form.color"
+                                        placeholder="VD: Đỏ, Xanh..."
+                                        class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Kích thước</label>
+                                    <input
+                                        type="text"
+                                        v-model="form.size"
+                                        placeholder="VD: S, M, L..."
+                                        class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                    />
+                                </div>
+                            </div>
+
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Kích thước</label>
+                                <label class="block text-sm font-medium text-gray-700">SKU</label>
                                 <input
                                     type="text"
-                                    v-model="form.size"
-                                    placeholder="VD: S, M, L..."
+                                    v-model="form.sku"
+                                    placeholder="Mã SKU (tùy chọn)"
                                     class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                                 />
                             </div>
-                        </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">SKU</label>
-                            <input
-                                type="text"
-                                v-model="form.sku"
-                                placeholder="Mã SKU (tùy chọn)"
-                                class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                            />
-                        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Số lượng *</label>
+                                <input
+                                    type="number"
+                                    v-model.number="form.quantity"
+                                    min="0"
+                                    required
+                                    class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                />
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Số lượng *</label>
-                            <input
-                                type="number"
-                                v-model.number="form.quantity"
-                                min="0"
-                                required
-                                class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL)</label>
-                            <input
-                                type="url"
-                                v-model="form.img_url"
-                                placeholder="https://example.com/image.jpg"
-                                class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">URL hình ảnh cho biến thể này (tùy chọn)</p>
-                            <div v-if="form.img_url" class="mt-2">
-                                <img :src="form.img_url" :alt="`${form.color} ${form.size}`" 
-                                     class="h-24 w-24 object-cover rounded-lg border border-gray-200"
-                                     @error="$event.target.style.display='none'">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL)</label>
+                                <input
+                                    type="url"
+                                    v-model="form.img_url"
+                                    placeholder="https://example.com/image.jpg"
+                                    class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                />
+                                <p class="mt-1 text-xs text-gray-500">URL hình ảnh cho biến thể này (tùy chọn)</p>
+                                <div v-if="form.img_url" class="mt-2 flex items-center justify-center">
+                                    <img :src="form.img_url" :alt="`${form.color} ${form.size}`" 
+                                         class="h-24 w-24 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                                         @error="$event.target.style.display='none'">
+                                </div>
                             </div>
                         </div>
 
@@ -541,7 +668,7 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                             </svg>
-                            <span>{{ saving ? 'Đang lưu...' : (isEditing ? 'Cập nhật biến thể' : 'Thêm biến thể') }}</span>
+                            <span>{{ saving ? 'Đang lưu...' : (isEditing ? 'Cập nhật biến thể' : (isAddingMultipleSizes ? 'Thêm tất cả size' : 'Thêm biến thể')) }}</span>
                         </button>
                     </div>
                 </div>
@@ -575,6 +702,7 @@ export default {
             saving: false,
             isModalOpen: false,
             isEditing: false,
+            isAddingMultipleSizes: false,
             formError: null,
             form: {
                 id: null,
@@ -585,6 +713,9 @@ export default {
                 quantity: 0,
                 img_url: '',
             },
+            multipleSizes: [
+                { size: '', quantity: 0, sku: '' }
+            ],
             filters: {
                 search: '',
                 category_id: '',
@@ -984,6 +1115,7 @@ export default {
             return 'Còn hàng';
         },
         openModal(variant) {
+            this.isAddingMultipleSizes = false;
             if (variant) {
                 this.isEditing = true;
                 this.form = {
@@ -1012,34 +1144,153 @@ export default {
                     brand_id: '',
                 };
             }
+            this.multipleSizes = [{ size: '', quantity: 0, sku: '' }];
             this.formError = null;
             this.isModalOpen = true;
+        },
+        openModalForColor(productId) {
+            this.isEditing = false;
+            this.isAddingMultipleSizes = false;
+            this.form = {
+                id: null,
+                product_id: productId,
+                color: '',
+                size: '',
+                sku: '',
+                quantity: 0,
+                img_url: '',
+            };
+            this.multipleSizes = [{ size: '', quantity: 0, sku: '' }];
+            // Set modal filters để hiển thị đúng sản phẩm đã chọn
+            const product = this.products.find(p => p.id == productId);
+            if (product) {
+                this.modalFilters = {
+                    search: product.name || '',
+                    category_id: product.category_id || '',
+                    brand_id: product.brand_id || '',
+                };
+            } else {
+                this.modalFilters = {
+                    search: '',
+                    category_id: '',
+                    brand_id: '',
+                };
+            }
+            this.formError = null;
+            this.isModalOpen = true;
+        },
+        openModalForSize(productId, color) {
+            this.isEditing = false;
+            this.isAddingMultipleSizes = true;
+            this.form = {
+                id: null,
+                product_id: productId,
+                color: color || '',
+                size: '',
+                sku: '',
+                quantity: 0,
+                img_url: '',
+            };
+            // Khởi tạo với 1 dòng size
+            this.multipleSizes = [
+                { size: '', quantity: 0, sku: '' }
+            ];
+            // Set modal filters để hiển thị đúng sản phẩm đã chọn
+            const product = this.products.find(p => p.id == productId);
+            if (product) {
+                this.modalFilters = {
+                    search: product.name || '',
+                    category_id: product.category_id || '',
+                    brand_id: product.brand_id || '',
+                };
+            } else {
+                this.modalFilters = {
+                    search: '',
+                    category_id: '',
+                    brand_id: '',
+                };
+            }
+            this.formError = null;
+            this.isModalOpen = true;
+        },
+        addSizeRow() {
+            this.multipleSizes.push({ size: '', quantity: 0, sku: '' });
+        },
+        removeSizeRow(index) {
+            if (this.multipleSizes.length > 1) {
+                this.multipleSizes.splice(index, 1);
+            }
         },
         closeModal() {
             this.isModalOpen = false;
             this.isEditing = false;
+            this.isAddingMultipleSizes = false;
             this.formError = null;
+            this.multipleSizes = [{ size: '', quantity: 0, sku: '' }];
         },
         async handleSubmit() {
             this.saving = true;
             this.formError = null;
 
             try {
-                const payload = {
-                    product_id: this.form.product_id,
-                    color: this.form.color || null,
-                    size: this.form.size || null,
-                    sku: this.form.sku || null,
-                    quantity: this.form.quantity,
-                    img_url: this.form.img_url || null,
-                };
+                // Nếu đang thêm nhiều size
+                if (this.isAddingMultipleSizes && !this.isEditing) {
+                    // Validate
+                    if (!this.form.product_id) {
+                        this.formError = 'Vui lòng chọn sản phẩm';
+                        this.saving = false;
+                        return;
+                    }
+                    if (!this.form.color || this.form.color.trim() === '') {
+                        this.formError = 'Vui lòng nhập màu sắc';
+                        this.saving = false;
+                        return;
+                    }
+                    
+                    // Lọc các dòng có size và quantity hợp lệ
+                    const validSizes = this.multipleSizes.filter(
+                        s => s.size && s.size.trim() !== '' && (s.quantity !== null && s.quantity !== undefined)
+                    );
+                    
+                    if (validSizes.length === 0) {
+                        this.formError = 'Vui lòng thêm ít nhất một size với số lượng';
+                        this.saving = false;
+                        return;
+                    }
 
-                if (this.isEditing) {
-                    await axios.put(`http://127.0.0.1:8000/api/product-variants/${this.form.id}`, payload);
-                    alert('Cập nhật biến thể thành công');
+                    // Tạo nhiều variants cùng lúc
+                    const promises = validSizes.map(sizeRow => {
+                        const payload = {
+                            product_id: this.form.product_id,
+                            color: this.form.color.trim(),
+                            size: sizeRow.size.trim() || null,
+                            sku: sizeRow.sku && sizeRow.sku.trim() ? sizeRow.sku.trim() : null,
+                            quantity: Number(sizeRow.quantity) || 0,
+                            img_url: this.form.img_url && this.form.img_url.trim() ? this.form.img_url.trim() : null,
+                        };
+                        return axios.post("http://127.0.0.1:8000/api/product-variants", payload);
+                    });
+
+                    await Promise.all(promises);
+                    alert(`Đã thêm ${validSizes.length} biến thể thành công`);
                 } else {
-                    await axios.post("http://127.0.0.1:8000/api/product-variants", payload);
-                    alert('Thêm biến thể thành công');
+                    // Form thông thường (thêm/sửa 1 biến thể)
+                    const payload = {
+                        product_id: this.form.product_id,
+                        color: this.form.color || null,
+                        size: this.form.size || null,
+                        sku: this.form.sku || null,
+                        quantity: this.form.quantity,
+                        img_url: this.form.img_url || null,
+                    };
+
+                    if (this.isEditing) {
+                        await axios.put(`http://127.0.0.1:8000/api/product-variants/${this.form.id}`, payload);
+                        alert('Cập nhật biến thể thành công');
+                    } else {
+                        await axios.post("http://127.0.0.1:8000/api/product-variants", payload);
+                        alert('Thêm biến thể thành công');
+                    }
                 }
 
                 this.closeModal();
@@ -1048,6 +1299,10 @@ export default {
                 console.error("Error saving variant:", error);
                 if (error.response?.data?.message) {
                     this.formError = error.response.data.message;
+                } else if (error.response?.data?.errors) {
+                    const errors = error.response.data.errors;
+                    const errorMessages = Object.keys(errors).map(key => `${key}: ${errors[key].join(', ')}`).join('\n');
+                    this.formError = errorMessages;
                 } else {
                     this.formError = 'Có lỗi xảy ra khi lưu biến thể';
                 }

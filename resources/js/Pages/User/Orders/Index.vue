@@ -12,7 +12,7 @@
                 <form @submit.prevent="applyFilter" class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Lọc theo trạng thái</label>
-                        <select v-model="localFilters.status" 
+                        <select v-model="localFilters.status"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Tất cả trạng thái</option>
                             <option value="pending">Chờ xử lý</option>
@@ -23,7 +23,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="submit" 
+                        <button type="submit"
                                 class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 font-medium">
                             Lọc
                         </button>
@@ -38,7 +38,7 @@
                 </svg>
                 <h2 class="mt-4 text-xl font-semibold text-gray-900">Chưa có đơn hàng</h2>
                 <p class="mt-2 text-gray-600">Bạn chưa có đơn hàng nào</p>
-                <Link :href="route('user.products.index')" 
+                <Link :href="route('user.products.index')"
                       class="mt-6 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">
                     Tiếp tục mua sắm
                 </Link>
@@ -46,7 +46,7 @@
 
             <!-- Orders List -->
             <div v-else class="space-y-4">
-                <div v-for="order in orders.data" :key="order.id" 
+                <div v-for="order in orders.data" :key="order.id"
                      class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                     <div class="p-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -54,12 +54,12 @@
                             <div class="flex-1">
                                 <div class="flex items-center gap-4 mb-3">
                                     <h3 class="text-lg font-semibold text-gray-900">Mã đơn: {{ order.order_number }}</h3>
-                                    <span :class="getStatusBadgeClass(order.status)" 
+                                    <span :class="getStatusBadgeClass(order.status)"
                                           class="px-3 py-1 rounded-full text-xs font-medium">
                                         {{ getStatusText(order.status) }}
                                     </span>
                                 </div>
-                                
+
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
                                     <div>
                                         <span class="font-medium text-gray-700">Ngày đặt:</span>
@@ -84,7 +84,7 @@
 
                             <!-- Actions -->
                             <div class="flex gap-2">
-                                <Link :href="route('user.orders.show', order.id)" 
+                                <Link :href="route('user.orders.show', order.id)"
                                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 font-medium">
                                     Xem chi tiết
                                 </Link>
@@ -103,8 +103,8 @@
                         :href="link.url || '#'"
                         :class="[
                             'px-4 py-2 rounded-lg border transition duration-300',
-                            link.active 
-                                ? 'bg-blue-600 text-white border-blue-600' 
+                            link.active
+                                ? 'bg-blue-600 text-white border-blue-600'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                         ]"
                         v-html="link.label"

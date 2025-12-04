@@ -99,11 +99,11 @@
                          class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                         <div v-for="product in products.data" :key="product.id" 
                              class="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col">
-                            <div class="relative w-full aspect-square overflow-hidden bg-gray-100">
-                                <Link :href="route('user.products.show', product.id)" class="block w-full h-full">
+                            <div class="relative w-full aspect-square overflow-hidden bg-gray-100 flex items-center justify-center">
+                                <Link :href="route('user.products.show', product.id)" class="block w-full h-full flex items-center justify-center">
                                     <img :src="product.img_url || '/images/placeholder.jpg'" 
                                          :alt="product.name"
-                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300">
                                 </Link>
                                 <!-- Discount Badge -->
                                 <div v-if="product.discount_percent" 

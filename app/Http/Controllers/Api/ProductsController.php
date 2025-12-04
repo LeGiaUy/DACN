@@ -60,55 +60,86 @@ class ProductsController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
-            'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'img_url' => 'nullable|string|url',
-            'colors' => 'nullable|array',
-            'colors.*' => 'string|max:50',
-            'sizes' => 'nullable|array',
-            'sizes.*' => 'string|max:10',
-            'quantity' => 'nullable|integer|min:0',
-            'is_featured' => 'boolean',
-            'variants' => 'nullable|array',
-            'variants.*.color' => 'nullable|string|max:50',
-            'variants.*.size' => 'nullable|string|max:20',
-            'variants.*.sku' => 'nullable|string|max:100',
-            'variants.*.quantity' => 'required_with:variants|integer|min:0',
-            'variants.*.img_url' => 'nullable|string|url|max:500',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'price' => 'required|numeric|min:0',
+                'category_id' => 'required|exists:categories,id',
+                'brand_id' => 'required|exists:brands,id',
+                'img_url' => 'nullable|string',
+                'colors' => 'nullable|array',
+                'colors.*' => 'string|max:50',
+                'sizes' => 'nullable|array',
+                'sizes.*' => 'string|max:10',
+                'quantity' => 'nullable|integer|min:0',
+                'is_featured' => 'nullable|boolean',
+                'variants' => 'nullable|array',
+                'variants.*.color' => 'nullable|string|max:50',
+                'variants.*.size' => 'nullable|string|max:20',
+                'variants.*.sku' => 'nullable|string|max:100',
+                'variants.*.quantity' => 'nullable|integer|min:0',
+                'variants.*.img_url' => 'nullable|string|max:500',
+            ]);
+            
+            // Chuẩn hóa dữ liệu
+            $data = [
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? '',
+                'price' => $validated['price'],
+                'category_id' => $validated['category_id'],
+                'brand_id' => $validated['brand_id'],
+                'img_url' => !empty($validated['img_url']) ? $validated['img_url'] : null,
+                'colors' => $validated['colors'] ?? [],
+                'sizes' => $validated['sizes'] ?? [],
+                'quantity' => $validated['quantity'] ?? 0,
+                'is_featured' => $validated['is_featured'] ?? false,
+            ];
     
-        $product = Product::create($request->only([
-            'name', 'description', 'price', 'category_id', 'brand_id', 'img_url', 'colors', 'sizes', 'quantity', 'is_featured'
-        ]));
+            $product = Product::create($data);
 
-        if ($request->filled('variants') && \Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
-            $variants = collect($request->input('variants'))
-                ->map(function ($v) use ($product) {
-                    return [
-                        'product_id' => $product->id,
-                        'color' => $v['color'] ?? null,
-                        'size' => $v['size'] ?? null,
-                        'sku' => $v['sku'] ?? null,
-                        'quantity' => (int) ($v['quantity'] ?? 0),
-                        'img_url' => $v['img_url'] ?? null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                })->all();
-            if (!empty($variants)) {
-                ProductVariant::insert($variants);
+            if ($request->filled('variants') && \Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+                $variants = collect($request->input('variants'))
+                    ->filter(function ($v) {
+                        // Chỉ tạo variant nếu có ít nhất color hoặc size
+                        return !empty($v['color']) || !empty($v['size']);
+                    })
+                    ->map(function ($v) use ($product) {
+                        return [
+                            'product_id' => $product->id,
+                            'color' => $v['color'] ?? null,
+                            'size' => $v['size'] ?? null,
+                            'sku' => $v['sku'] ?? null,
+                            'quantity' => (int) ($v['quantity'] ?? 0),
+                            'img_url' => $v['img_url'] ?? null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    })->all();
+                if (!empty($variants)) {
+                    ProductVariant::insert($variants);
+                }
             }
+        
+            $with = ['category', 'brand'];
+            if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
+                $with[] = 'variants';
+            }
+            return response()->json($product->load($with), 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error creating product: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'message' => 'Error creating product: ' . $e->getMessage()
+            ], 500);
         }
-    
-        $with = ['category', 'brand'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('product_variants')) {
-            $with[] = 'variants';
-        }
-        return response()->json($product->load($with), 201);
     }
     
 
