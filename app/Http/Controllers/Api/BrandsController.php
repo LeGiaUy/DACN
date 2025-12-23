@@ -49,6 +49,35 @@ class BrandsController extends Controller
         ]);
 
         $path = $request->file('file')->getRealPath();
+        $tempPath = null;
+        
+        // Đọc file và xử lý BOM (Byte Order Mark) cho UTF-8
+        $content = file_get_contents($path);
+        $hasBom = substr($content, 0, 3) === "\xEF\xBB\xBF";
+        
+        // Loại bỏ BOM nếu có
+        if ($hasBom) {
+            $content = substr($content, 3);
+        }
+        
+        // Đảm bảo content là UTF-8
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            // Thử convert từ các encoding phổ biến
+            $encodings = ['ISO-8859-1', 'Windows-1252'];
+            foreach ($encodings as $enc) {
+                $converted = @mb_convert_encoding($content, 'UTF-8', $enc);
+                if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                    $content = $converted;
+                    break;
+                }
+            }
+        }
+        
+        // Tạo temp file với content đã được xử lý
+        $tempPath = sys_get_temp_dir() . '/' . uniqid('csv_') . '.csv';
+        file_put_contents($tempPath, $content);
+        $path = $tempPath;
+        
         $handle = fopen($path, 'r');
 
         if ($handle === false) {
@@ -56,8 +85,11 @@ class BrandsController extends Controller
         }
 
         $header = fgetcsv($handle);
-        if (!$header) {
+        if (!$header || empty($header)) {
             fclose($handle);
+            if ($tempPath !== null && file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
             return response()->json(['message' => 'File CSV rỗng hoặc không hợp lệ'], 422);
         }
 
@@ -65,40 +97,88 @@ class BrandsController extends Controller
 
         $created = 0;
         $updated = 0;
+        $rowNumber = 1;
 
         while (($row = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+            
+            // Bỏ qua dòng trống
             if (count(array_filter($row, fn ($v) => $v !== null && $v !== '')) === 0) {
                 continue;
             }
 
+            // Kiểm tra số cột có khớp với header không
+            if (count($row) !== count($header)) {
+                continue;
+            }
+
             $data = array_combine($header, $row);
-            if ($data === false || empty($data['name'])) {
+            if ($data === false || empty(trim($data['name'] ?? ''))) {
                 continue;
             }
 
             // Chuẩn hóa encoding về UTF-8 để tránh lỗi tiếng Việt
             $data = array_map(function ($value) {
-                return is_string($value)
-                    ? mb_convert_encoding($value, 'UTF-8', 'UTF-8,ISO-8859-1,Windows-1258,Windows-1252')
-                    : $value;
+                if (!is_string($value) || empty($value)) {
+                    return $value;
+                }
+                
+                // Kiểm tra xem đã là UTF-8 hợp lệ chưa
+                if (mb_check_encoding($value, 'UTF-8')) {
+                    // Nếu đã là UTF-8, kiểm tra xem có phải double encoding không
+                    // Nếu decode UTF-8 rồi encode lại vẫn giống nhau thì OK
+                    $decoded = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                    if ($decoded === $value) {
+                        return $value;
+                    }
+                }
+                
+                // Thử detect encoding và convert
+                $encodings = ['UTF-8', 'ISO-8859-1', 'Windows-1252'];
+                $detected = mb_detect_encoding($value, $encodings, true);
+                
+                if ($detected && $detected !== 'UTF-8') {
+                    $converted = @mb_convert_encoding($value, 'UTF-8', $detected);
+                    if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                        return $converted;
+                    }
+                }
+                
+                // Cuối cùng, trả về giá trị gốc
+                return $value;
             }, $data);
 
             $payload = [
-                'name' => $data['name'],
-                'description' => $data['description'] ?? '',
+                'name' => trim($data['name']),
+                'description' => trim($data['description'] ?? ''),
             ];
 
-            $brand = Brand::where('name', $payload['name'])->first();
-            if ($brand) {
-                $brand->update($payload);
-                $updated++;
-            } else {
-                Brand::create($payload);
-                $created++;
+            if (empty($payload['name'])) {
+                continue;
+            }
+
+            try {
+                $brand = Brand::where('name', $payload['name'])->first();
+                if ($brand) {
+                    $brand->update($payload);
+                    $updated++;
+                } else {
+                    Brand::create($payload);
+                    $created++;
+                }
+            } catch (\Exception $e) {
+                // Log lỗi nhưng tiếp tục xử lý các dòng khác
+                \Log::error("Lỗi import brand dòng {$rowNumber}: " . $e->getMessage());
+                continue;
             }
         }
 
         fclose($handle);
+        
+        // Xóa temp file luôn (vì đã tạo temp file mới)
+        if ($tempPath !== null && file_exists($tempPath)) {
+            @unlink($tempPath);
+        }
 
         return response()->json([
             'message' => 'Import thương hiệu hoàn tất',
