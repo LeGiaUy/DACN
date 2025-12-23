@@ -51,6 +51,7 @@
                         Tải file mẫu
                     </button>
                     <input
+                        ref="categoryFileInput"
                         type="file"
                         accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                         @change="onCategoryFileChange"
@@ -243,33 +244,53 @@ export default {
             this.categoryImportFile = file;
         },
         downloadCategoryTemplate() {
-            const header = 'name,description\n';
-            const example = 'Quần áo bé trai,Danh mục cho bé trai\n';
-            const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'categories_template.csv';
-            a.click();
-            URL.revokeObjectURL(url);
+            // Thêm UTF-8 BOM để Excel đọc đúng tiếng Việt
+            const BOM = '\uFEFF'
+            const header = 'name,description\n'
+            const example = 'Quần áo bé trai,Danh mục cho bé trai\n'
+            const content = BOM + header + example
+            const blob = new Blob([content], {
+              type: 'text/csv;charset=utf-8;',
+            })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'categories_template.csv'
+            a.click()
+            URL.revokeObjectURL(url)
         },
         async importCategories() {
-            if (!this.categoryImportFile) return;
-            const formData = new FormData();
-            formData.append('file', this.categoryImportFile);
-            this.importingCategories = true;
+            if (!this.categoryImportFile) return
+            const formData = new FormData()
+            formData.append('file', this.categoryImportFile)
+            this.importingCategories = true
             try {
-                const response = await axios.post('http://127.0.0.1:8000/api/categories/import', formData, {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/categories/import',
+                  formData,
+                  {
                     headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                alert(response.data?.message || 'Import danh mục thành công');
-                this.categoryImportFile = null;
-                await this.fetchCategories();
+                  }
+                )
+                alert(
+                  response.data?.message ||
+                    'Import danh mục thành công'
+                )
+                // Reset input file
+                this.categoryImportFile = null
+                if (this.$refs.categoryFileInput) {
+                  this.$refs.categoryFileInput.value = ''
+                }
+                // Fetch lại danh sách categories
+                await this.fetchCategories()
             } catch (error) {
-                console.error('Error importing categories:', error);
-                alert(error.response?.data?.message || 'Lỗi khi import danh mục');
+                console.error('Error importing categories:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi import danh mục'
+                )
             } finally {
-                this.importingCategories = false;
+                this.importingCategories = false
             }
         },
         async handleSubmit() {

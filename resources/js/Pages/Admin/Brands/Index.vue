@@ -51,6 +51,7 @@
                         Tải file mẫu
                     </button>
                     <input
+                        ref="brandFileInput"
                         type="file"
                         accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                         @change="onBrandFileChange"
@@ -244,33 +245,53 @@ export default {
             this.brandImportFile = file;
         },
         downloadBrandTemplate() {
-            const header = 'name,description\n';
-            const example = 'Nike,Thương hiệu thời trang thể thao\n';
-            const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'brands_template.csv';
-            a.click();
-            URL.revokeObjectURL(url);
+            // Thêm UTF-8 BOM để Excel đọc đúng tiếng Việt
+            const BOM = '\uFEFF'
+            const header = 'name,description\n'
+            const example = 'Nike,Thương hiệu thời trang thể thao\n'
+            const content = BOM + header + example
+            const blob = new Blob([content], {
+              type: 'text/csv;charset=utf-8;',
+            })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'brands_template.csv'
+            a.click()
+            URL.revokeObjectURL(url)
         },
         async importBrands() {
-            if (!this.brandImportFile) return;
-            const formData = new FormData();
-            formData.append('file', this.brandImportFile);
-            this.importingBrands = true;
+            if (!this.brandImportFile) return
+            const formData = new FormData()
+            formData.append('file', this.brandImportFile)
+            this.importingBrands = true
             try {
-                const response = await axios.post('http://127.0.0.1:8000/api/brands/import', formData, {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/brands/import',
+                  formData,
+                  {
                     headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                alert(response.data?.message || 'Import thương hiệu thành công');
-                this.brandImportFile = null;
-                await this.fetchBrands();
+                  }
+                )
+                alert(
+                  response.data?.message ||
+                    'Import thương hiệu thành công'
+                )
+                // Reset input file
+                this.brandImportFile = null
+                if (this.$refs.brandFileInput) {
+                  this.$refs.brandFileInput.value = ''
+                }
+                // Fetch lại danh sách brands
+                await this.fetchBrands()
             } catch (error) {
-                console.error('Error importing brands:', error);
-                alert(error.response?.data?.message || 'Lỗi khi import thương hiệu');
+                console.error('Error importing brands:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi import thương hiệu'
+                )
             } finally {
-                this.importingBrands = false;
+                this.importingBrands = false
             }
         },
         async handleSubmit() {

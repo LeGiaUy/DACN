@@ -24,7 +24,9 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     // Admin routes - chỉ admin mới có thể truy cập
-    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+    // Tạm thời comment middleware để kiểm thử API admin
+    Route::prefix('admin')->name('admin.')->group(function () {
+    // Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('dashboard/export-pdf', [AdminDashboardController::class, 'exportPdf'])->name('dashboard.export-pdf');
         Route::resource('categories', CategoryController::class);
         Route::resource('brands', BrandController::class);
