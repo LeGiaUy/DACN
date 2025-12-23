@@ -73,4 +73,23 @@ class CategoriesController extends Controller
         $category->delete();
         return response()->noContent();
     }
+
+    /**
+     * Xóa nhiều categories cùng lúc
+     */
+    public function destroyMany(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:categories,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $deleted = Category::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'message' => "Đã xóa {$deleted} danh mục",
+            'deleted' => $deleted,
+        ]);
+    }
 }

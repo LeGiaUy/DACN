@@ -166,6 +166,25 @@ class ProductsController extends Controller
     }
 
     /**
+     * Xóa nhiều products cùng lúc
+     */
+    public function destroyMany(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:products,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $deleted = Product::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'message' => "Đã xóa {$deleted} sản phẩm",
+            'deleted' => $deleted,
+        ]);
+    }
+
+    /**
      * Handle image upload for products.
      */
     public function upload(Request $request)

@@ -42,10 +42,30 @@
 
             <!-- Brands Table -->
             <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Bulk Actions Bar -->
+                <div v-if="selectedBrands.length > 0" class="px-6 py-3 bg-teal-50 border-b border-gray-200 flex items-center justify-between">
+                    <span class="text-sm text-teal-800 font-medium">
+                        Đã chọn {{ selectedBrands.length }} thương hiệu
+                    </span>
+                    <button
+                        @click="deleteSelectedBrands"
+                        class="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    >
+                        Xóa đã chọn
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-6 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        :checked="isAllSelected"
+                                        @change="toggleSelectAll"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
@@ -54,6 +74,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="brand in brands" :key="brand.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input
+                                        type="checkbox"
+                                        :value="brand.id"
+                                        v-model="selectedBrands"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     #{{ brand.id }}
                                 </td>
@@ -81,7 +109,7 @@
                                 </td>
                             </tr>
                             <tr v-if="brands.length === 0">
-                                <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                     Chưa có thương hiệu nào. Hãy thêm thương hiệu đầu tiên!
                                 </td>
                             </tr>
@@ -179,6 +207,7 @@ export default {
             error: null,
             isModalOpen: false,
             isEditing: false,
+            selectedBrands: [],
             form: {
                 id: null,
                 name: '',
@@ -186,6 +215,12 @@ export default {
             },
             idError: null,
             originalId: null,
+        }
+    },
+    computed: {
+        isAllSelected() {
+            return this.brands.length > 0 && 
+                   this.selectedBrands.length === this.brands.length
         }
     },
     mounted() {
@@ -298,13 +333,47 @@ export default {
         async deleteBrand(id) {
             try {
                 if (confirm('Bạn có chắc chắn muốn xóa thương hiệu này không?')) {
-                    await axios.delete(`http://127.0.0.1:8000/api/brands/${id}`);
-                    this.brands = this.brands.filter(brand => brand.id !== id);
-                    alert('Xóa thương hiệu thành công');
+                    await axios.delete(`http://127.0.0.1:8000/api/brands/${id}`)
+                    this.brands = this.brands.filter(brand => brand.id !== id)
+                    this.selectedBrands = this.selectedBrands.filter(
+                      selectedId => selectedId !== id
+                    )
+                    alert('Xóa thương hiệu thành công')
                 }
             } catch (error) {
-                console.error('Error deleting brand:', error);
-                alert('Lỗi khi xóa thương hiệu');
+                console.error('Error deleting brand:', error)
+                alert('Lỗi khi xóa thương hiệu')
+            }
+        },
+        toggleSelectAll() {
+            if (this.isAllSelected) {
+                this.selectedBrands = []
+            } else {
+                this.selectedBrands = this.brands.map(brand => brand.id)
+            }
+        },
+        async deleteSelectedBrands() {
+            if (this.selectedBrands.length === 0) return
+            
+            const count = this.selectedBrands.length
+            const message = `Bạn có chắc chắn muốn xóa ${count} thương hiệu đã chọn không?`
+            
+            if (!confirm(message)) return
+            
+            try {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/brands/bulk-delete',
+                  { ids: this.selectedBrands }
+                )
+                alert(response.data?.message || 'Xóa thương hiệu thành công')
+                this.selectedBrands = []
+                await this.fetchBrands()
+            } catch (error) {
+                console.error('Error deleting brands:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi xóa thương hiệu'
+                )
             }
         }
     }

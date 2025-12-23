@@ -48,10 +48,30 @@
 
             <!-- Products Table -->
             <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Bulk Actions Bar -->
+                <div v-if="selectedProducts.length > 0" class="px-6 py-3 bg-teal-50 border-b border-gray-200 flex items-center justify-between">
+                    <span class="text-sm text-teal-800 font-medium">
+                        Đã chọn {{ selectedProducts.length }} sản phẩm
+                    </span>
+                    <button
+                        @click="deleteSelectedProducts"
+                        class="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    >
+                        Xóa đã chọn
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-6 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        :checked="isAllSelected"
+                                        @change="toggleSelectAll"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
@@ -64,6 +84,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="product in (products.data || [])" :key="product.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input
+                                        type="checkbox"
+                                        :value="product.id"
+                                        v-model="selectedProducts"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     #{{ product.id }}
                                 </td>
@@ -516,6 +544,7 @@ export default {
             error: null,
             isModalOpen: false,
             isEditing: false,
+            selectedProducts: [],
             form: {
                 id: null,
                 name: '',
@@ -734,17 +763,57 @@ export default {
         async deleteProduct(id) {
             try {
                 if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')) {
-                    await axios.delete(`http://127.0.0.1:8000/api/products/${id}`);
-                    await this.fetchProducts();
-                    alert('Xóa sản phẩm thành công');
+                    await axios.delete(`http://127.0.0.1:8000/api/products/${id}`)
+                    this.selectedProducts = this.selectedProducts.filter(
+                      selectedId => selectedId !== id
+                    )
+                    await this.fetchProducts()
+                    alert('Xóa sản phẩm thành công')
                 }
             } catch (error) {
-                console.error('Error deleting product:', error);
-                alert('Lỗi khi xóa sản phẩm');
+                console.error('Error deleting product:', error)
+                alert('Lỗi khi xóa sản phẩm')
+            }
+        },
+        toggleSelectAll() {
+            const productList = this.products.data || []
+            if (this.isAllSelected) {
+                this.selectedProducts = []
+            } else {
+                this.selectedProducts = productList.map(product => product.id)
+            }
+        },
+        async deleteSelectedProducts() {
+            if (this.selectedProducts.length === 0) return
+            
+            const count = this.selectedProducts.length
+            const message = `Bạn có chắc chắn muốn xóa ${count} sản phẩm đã chọn không?`
+            
+            if (!confirm(message)) return
+            
+            try {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/products/bulk-delete',
+                  { ids: this.selectedProducts }
+                )
+                alert(response.data?.message || 'Xóa sản phẩm thành công')
+                this.selectedProducts = []
+                await this.fetchProducts()
+            } catch (error) {
+                console.error('Error deleting products:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi xóa sản phẩm'
+                )
             }
         }
     },
     computed: {
+        isAllSelected() {
+            const productList = this.products.data || []
+            return productList.length > 0 && 
+                   this.selectedProducts.length === productList.length
+        },
         pageNumbers() {
             const last = this.products.last_page || 1;
             const current = this.products.current_page || 1;

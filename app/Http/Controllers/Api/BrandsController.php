@@ -73,4 +73,23 @@ class BrandsController extends Controller
         $brand->delete();
         return response()->noContent();
     }
+
+    /**
+     * Xóa nhiều brands cùng lúc
+     */
+    public function destroyMany(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:brands,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $deleted = Brand::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'message' => "Đã xóa {$deleted} thương hiệu",
+            'deleted' => $deleted,
+        ]);
+    }
 }

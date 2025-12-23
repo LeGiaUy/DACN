@@ -42,10 +42,30 @@
 
             <!-- Categories Table -->
             <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Bulk Actions Bar -->
+                <div v-if="selectedCategories.length > 0" class="px-6 py-3 bg-teal-50 border-b border-gray-200 flex items-center justify-between">
+                    <span class="text-sm text-teal-800 font-medium">
+                        Đã chọn {{ selectedCategories.length }} danh mục
+                    </span>
+                    <button
+                        @click="deleteSelectedCategories"
+                        class="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    >
+                        Xóa đã chọn
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-6 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        :checked="isAllSelected"
+                                        @change="toggleSelectAll"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
@@ -54,6 +74,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="category in categories" :key="category.id" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input
+                                        type="checkbox"
+                                        :value="category.id"
+                                        v-model="selectedCategories"
+                                        class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                    />
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     #{{ category.id }}
                                 </td>
@@ -81,7 +109,7 @@
                                 </td>
                             </tr>
                             <tr v-if="categories.length === 0">
-                                <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                     Chưa có danh mục nào. Hãy thêm danh mục đầu tiên!
                                 </td>
                             </tr>
@@ -179,6 +207,7 @@ export default {
             error: null,
             isModalOpen: false,
             isEditing: false,
+            selectedCategories: [],
             form: {
                 id: null,
                 name: '',
@@ -186,6 +215,12 @@ export default {
             },
             idError: null,
             originalId: null,
+        }
+    },
+    computed: {
+        isAllSelected() {
+            return this.categories.length > 0 && 
+                   this.selectedCategories.length === this.categories.length
         }
     },
     mounted() {
@@ -297,13 +332,49 @@ export default {
         async deleteCategory(id) {
             try {
                 if (confirm('Bạn có chắc chắn muốn xóa danh mục này không?')) {
-                    await axios.delete(`http://127.0.0.1:8000/api/categories/${id}`);
-                    this.categories = this.categories.filter(category => category.id !== id);
-                    alert('Xóa danh mục thành công');
+                    await axios.delete(`http://127.0.0.1:8000/api/categories/${id}`)
+                    this.categories = this.categories.filter(
+                      category => category.id !== id
+                    )
+                    this.selectedCategories = this.selectedCategories.filter(
+                      selectedId => selectedId !== id
+                    )
+                    alert('Xóa danh mục thành công')
                 }
             } catch (error) {
-                console.error('Error deleting category:', error);
-                alert('Lỗi khi xóa danh mục');
+                console.error('Error deleting category:', error)
+                alert('Lỗi khi xóa danh mục')
+            }
+        },
+        toggleSelectAll() {
+            if (this.isAllSelected) {
+                this.selectedCategories = []
+            } else {
+                this.selectedCategories = this.categories.map(cat => cat.id)
+            }
+        },
+        async deleteSelectedCategories() {
+            if (this.selectedCategories.length === 0) return
+            
+            const count = this.selectedCategories.length
+            const message = `Bạn có chắc chắn muốn xóa ${count} danh mục đã chọn không?`
+            
+            if (!confirm(message)) return
+            
+            try {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/categories/bulk-delete',
+                  { ids: this.selectedCategories }
+                )
+                alert(response.data?.message || 'Xóa danh mục thành công')
+                this.selectedCategories = []
+                await this.fetchCategories()
+            } catch (error) {
+                console.error('Error deleting categories:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi xóa danh mục'
+                )
             }
         }
     }
