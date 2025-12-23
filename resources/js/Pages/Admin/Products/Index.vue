@@ -19,24 +19,90 @@
             </div>
 
             <!-- Statistics Cards -->
-            <div v-if="!loading && products.data" class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div v-if="!loading" class="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Tổng số sản phẩm</p>
-                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ products.total || products.data.length }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ statistics.total || 0 }}</p>
                 </div>
                 <div class="rounded-lg border border-purple-100 bg-purple-50 p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Sản phẩm nổi bật</p>
-                    <p class="mt-2 text-2xl font-bold text-purple-600">{{ products.data.filter(p => p.is_featured).length }}</p>
+                    <p class="mt-2 text-2xl font-bold text-purple-600">{{ statistics.featured || 0 }}</p>
                 </div>
                 <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Sản phẩm có biến thể</p>
-                    <p class="mt-2 text-2xl font-bold text-blue-600">{{ products.data.filter(p => p.variants && p.variants.length > 0).length }}</p>
+                    <p class="mt-2 text-2xl font-bold text-blue-600">{{ statistics.with_variants || 0 }}</p>
                 </div>
                 <div class="rounded-lg border border-green-100 bg-green-50 p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Tổng số lượng tồn kho</p>
                     <p class="mt-2 text-2xl font-bold text-green-600">
-                        {{ products.data.reduce((sum, p) => sum + (p.total_quantity ?? p.quantity ?? 0), 0) }}
+                        {{ new Intl.NumberFormat('vi-VN').format(statistics.total_quantity || 0) }}
                     </p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tìm kiếm</label>
+                        <input
+                            v-model="filters.search"
+                            @input="applyFilters"
+                            type="text"
+                            placeholder="Tên sản phẩm..."
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
+                        <select
+                            v-model="filters.category_id"
+                            @change="applyFilters"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm"
+                        >
+                            <option value="">Tất cả danh mục</option>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">
+                                {{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Thương hiệu</label>
+                        <select
+                            v-model="filters.brand_id"
+                            @change="applyFilters"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm"
+                        >
+                            <option value="">Tất cả thương hiệu</option>
+                            <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                                {{ brand.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                        <select
+                            v-model="filters.status"
+                            @change="applyFilters"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm"
+                        >
+                            <option value="">Tất cả</option>
+                            <option value="featured">Nổi bật</option>
+                            <option value="with_variants">Có biến thể</option>
+                            <option value="no_variants">Không có biến thể</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button
+                        @click="resetFilters"
+                        class="inline-flex items-center space-x-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Đặt lại bộ lọc</span>
+                    </button>
                 </div>
             </div>
 
@@ -97,7 +163,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center space-x-3">
-                                        <img v-if="product.img_url" :src="product.img_url" alt="image" class="w-12 h-12 object-cover rounded" />
+                                        <img v-if="product.img_url" :src="product.img_url" alt="image" class="w-12 h-12 object-contain rounded bg-gray-100" />
                                         <div v-else class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                                             <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -398,9 +464,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Optional: Quick variant creation (simplified) -->
+                                <!-- Quick variant creation: nhiều màu, nhiều size, số lượng cho mỗi size -->
                                 <div
-                                    v-if="isEditing && form.id"
                                     class="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2"
                                 >
                                     <div class="flex items-center justify-between">
@@ -511,7 +576,7 @@
                         ></button>
                         <button
                             type="button"
-                            @click="$el.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))"
+                            @click="handleSubmit"
                             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-sm transition-colors"
                         >
                             {{ isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm' }}
@@ -536,6 +601,7 @@ export default {
     data() {
         return {
             products: { data: [] },
+            allProducts: [], // Lưu tất cả products để tính statistics
             perPage: 6,
             page: 1,
             categories: [],
@@ -545,6 +611,18 @@ export default {
             isModalOpen: false,
             isEditing: false,
             selectedProducts: [],
+            filters: {
+                search: '',
+                category_id: '',
+                brand_id: '',
+                status: '', // 'featured', 'with_variants', 'no_variants'
+            },
+            statistics: {
+                total: 0,
+                featured: 0,
+                with_variants: 0,
+                total_quantity: 0,
+            },
             form: {
                 id: null,
                 name: '',
@@ -572,13 +650,30 @@ export default {
     },
     methods: {
         async fetchProducts() {
+            this.loading = true;
             try {
-                const response = await axios.get("http://127.0.0.1:8000/api/products", { 
+                // Fetch tất cả products để tính statistics
+                const allResponse = await axios.get("http://127.0.0.1:8000/api/products", { 
                     params: { 
-                        page: this.page, 
-                        per_page: this.perPage 
+                        per_page: 10000 // Lấy tất cả để tính statistics
                     } 
                 });
+                this.allProducts = allResponse.data.data || [];
+                this.calculateStatistics();
+
+                // Fetch products với filters và pagination
+                const params = {
+                    page: this.page,
+                    per_page: this.perPage,
+                    ...this.filters
+                };
+                Object.keys(params).forEach(key => {
+                    if (params[key] === '' || params[key] === false) {
+                        delete params[key];
+                    }
+                });
+
+                const response = await axios.get("http://127.0.0.1:8000/api/products", { params });
                 this.products = response.data;
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -586,6 +681,53 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        calculateStatistics() {
+            if (!this.allProducts || this.allProducts.length === 0) {
+                this.statistics = {
+                    total: 0,
+                    featured: 0,
+                    with_variants: 0,
+                    total_quantity: 0,
+                };
+                return;
+            }
+
+            let total = this.allProducts.length;
+            let featured = 0;
+            let withVariants = 0;
+            let totalQuantity = 0;
+
+            this.allProducts.forEach(product => {
+                if (product.is_featured) {
+                    featured++;
+                }
+                if (product.variants && product.variants.length > 0) {
+                    withVariants++;
+                }
+                totalQuantity += parseInt(product.total_quantity || product.quantity || 0);
+            });
+
+            this.statistics = {
+                total: total,
+                featured: featured,
+                with_variants: withVariants,
+                total_quantity: totalQuantity,
+            };
+        },
+        applyFilters() {
+            this.page = 1;
+            this.fetchProducts();
+        },
+        resetFilters() {
+            this.filters = {
+                search: '',
+                category_id: '',
+                brand_id: '',
+                status: '',
+            };
+            this.page = 1;
+            this.fetchProducts();
         },
         getQuantityClass(quantity) {
             if (quantity <= 0) return 'text-red-600 font-bold';
@@ -649,14 +791,47 @@ export default {
             }
             
             const payload = { ...this.form };
-            // Ensure nullable fields are truly null for backend validation
-            if (!payload.img_url) payload.img_url = null;
-            // Clean variants
+            // Ensure nullable fields are properly formatted
+            if (!payload.img_url || payload.img_url.trim() === '') {
+                payload.img_url = null;
+            }
+            // Ensure description is not empty
+            if (!payload.description || payload.description.trim() === '') {
+                payload.description = '';
+            }
+            // Ensure arrays are properly formatted
+            if (!Array.isArray(payload.colors) || payload.colors.length === 0) {
+                payload.colors = [];
+            }
+            if (!Array.isArray(payload.sizes) || payload.sizes.length === 0) {
+                payload.sizes = [];
+            }
+            // Clean variants: nhiều màu, nhiều size, số lượng cho mỗi size
             if (Array.isArray(payload.variants)) {
                 payload.variants = payload.variants
-                    .filter(v => (v.color || v.size) && v.quantity >= 0)
-                    .map(v => ({ color: v.color || null, size: v.size || null, sku: v.sku || null, quantity: Number(v.quantity || 0) }));
+                    .filter(v => (v.color || v.size) && v.quantity !== null && v.quantity !== undefined)
+                    .map(v => ({ 
+                        color: v.color && v.color.trim() ? v.color.trim() : null, 
+                        size: v.size && v.size.trim() ? v.size.trim() : null, 
+                        sku: v.sku && v.sku.trim() ? v.sku.trim() : null, 
+                        quantity: Number(v.quantity || 0) 
+                    }));
+
+                // Nếu đang thêm sản phẩm mới, bắt buộc phải có ít nhất 1 biến thể
+                if (!this.isEditing && payload.variants.length === 0) {
+                    alert('Vui lòng tạo ít nhất 1 biến thể (màu, size, số lượng) trước khi lưu sản phẩm.');
+                    return;
+                }
+
+                if (payload.variants.length === 0) {
+                    delete payload.variants;
+                }
             } else {
+                // Không có mảng variants
+                if (!this.isEditing) {
+                    alert('Vui lòng tạo ít nhất 1 biến thể (màu, size, số lượng) trước khi lưu sản phẩm.');
+                    return;
+                }
                 delete payload.variants;
             }
 
@@ -697,17 +872,30 @@ export default {
                 const formData = { ...payload };
                 delete formData.id;
                 
-                await axios.post("http://127.0.0.1:8000/api/products", formData);
+                console.log('Sending payload:', formData);
+                
+                const response = await axios.post("http://127.0.0.1:8000/api/products", formData);
                 await this.fetchProducts();
                 alert('Thêm sản phẩm thành công');
             } catch (error) {
                 console.error("Error adding product:", error);
-                if (error.response && error.response.data && error.response.data.errors) {
-                    if (error.response.data.errors.id) {
-                        this.idError = 'ID này đã tồn tại';
+                console.error("Error response:", error.response?.data);
+                
+                if (error.response) {
+                    if (error.response.status === 422 && error.response.data?.errors) {
+                        const errors = error.response.data.errors;
+                        let errorMessage = 'Lỗi validation:\n';
+                        Object.keys(errors).forEach(key => {
+                            errorMessage += `${key}: ${errors[key].join(', ')}\n`;
+                        });
+                        alert(errorMessage);
+                    } else if (error.response.data?.message) {
+                        alert('Lỗi: ' + error.response.data.message);
+                    } else {
+                        alert('Lỗi khi thêm sản phẩm: ' + (error.response.statusText || 'Unknown error'));
                     }
                 } else {
-                    alert('Lỗi khi thêm sản phẩm');
+                    alert('Lỗi khi thêm sản phẩm: ' + (error.message || 'Network error'));
                 }
             }
         },

@@ -17,7 +17,7 @@ class HomeController extends Controller
         // Lấy sản phẩm mới nhất (HÀNG MỚI VỀ)
         $newProducts = Product::with(['category', 'brand'])
             ->orderBy('created_at', 'desc')
-            ->limit(16)
+            ->limit(10)
             ->get();
             
         // Lấy sản phẩm nổi bật

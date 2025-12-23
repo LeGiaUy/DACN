@@ -106,4 +106,84 @@ class BannerController extends Controller
         return redirect()->route('admin.banners.index')
             ->with('success', 'Banner đã được xóa thành công.');
     }
+
+    /**
+     * Import banners from CSV file (no external package).
+     *
+     * Expected header:
+     * title,image_url,alt_text,link_url,order,is_active
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $path = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            return back()->with('error', 'Không thể đọc file upload');
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            fclose($handle);
+            return back()->with('error', 'File CSV rỗng hoặc không hợp lệ');
+        }
+
+        $header = array_map(fn ($h) => strtolower(trim($h)), $header);
+
+        $created = 0;
+        $updated = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count(array_filter($row, fn ($v) => $v !== null && $v !== '')) === 0) {
+                continue;
+            }
+
+            $data = array_combine($header, $row);
+            if ($data === false || empty($data['image_url'])) {
+                continue;
+            }
+
+            // Chuẩn hóa encoding về UTF-8 để tránh lỗi tiếng Việt
+            $data = array_map(function ($value) {
+                return is_string($value)
+                    ? mb_convert_encoding($value, 'UTF-8', 'UTF-8,ISO-8859-1,Windows-1258,Windows-1252')
+                    : $value;
+            }, $data);
+
+            $payload = [
+                'title'     => $data['title'] ?? null,
+                'image_url' => $data['image_url'],
+                'alt_text'  => $data['alt_text'] ?? null,
+                'link_url'  => $data['link_url'] ?? null,
+                'order'     => isset($data['order']) && $data['order'] !== '' ? (int) $data['order'] : 0,
+                'is_active' => isset($data['is_active']) && $data['is_active'] !== ''
+                    ? filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN)
+                    : true,
+            ];
+
+            $banner = Banner::where('image_url', $payload['image_url'])->first();
+            if ($banner) {
+                $banner->update($payload);
+                $updated++;
+            } else {
+                Banner::create($payload);
+                $created++;
+            }
+        }
+
+        fclose($handle);
+
+        $message = "Import banner hoàn tất. Tạo mới: {$created}, cập nhật: {$updated}";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['message' => $message], 200);
+        }
+
+        return redirect()->route('admin.banners.index')
+            ->with('success', $message);
+    }
 }

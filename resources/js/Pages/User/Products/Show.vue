@@ -36,7 +36,7 @@
                 <div class="flex gap-4">
                     <!-- Thumbnails on the left (vertical scroll) -->
                     <div v-if="productImages.length > 1" class="flex-shrink-0 pt-1">
-                        <div ref="thumbnailContainer" 
+                        <div ref="thumbnailContainer"
                              class="flex flex-col gap-3 overflow-y-auto max-h-[600px] scrollbar-hide scroll-smooth px-2 pt-4 pb-4"
                              style="scrollbar-width: none; -ms-overflow-style: none;">
                             <button
@@ -44,25 +44,29 @@
                                 :key="index"
                                 @click="selectImage(index)"
                                 :class="[
-                                    'flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer',
+                                    'flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer bg-gray-100 flex items-center justify-center',
                                     currentImageIndex === index
-                                        ? 'border-blue-600 ring-2 ring-blue-200 scale-105 shadow-md' 
+                                        ? 'border-blue-600 ring-2 ring-blue-200 scale-105 shadow-md'
                                         : 'border-gray-200 hover:border-gray-400 hover:scale-105'
                                 ]"
                                 :title="`Hình ${index + 1}`">
-                                <img :src="image" 
+                                <img :src="image"
                                      :alt="`${product.name} - Hình ${index + 1}`"
-                                     class="w-full h-full object-cover">
+                                     class="w-full h-full object-contain"
+                                     @error="handleImageError($event, image)"
+                                     @load="handleImageLoad($event)">
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Main Image -->
-                    <div class="flex-1 relative aspect-square overflow-hidden rounded-lg bg-gray-100 group">
-                        <img :src="selectedImage" 
+                    <div class="flex-1 relative aspect-square overflow-hidden rounded-lg bg-gray-100 group flex items-center justify-center">
+                        <img :src="selectedImage"
                              :alt="product.name"
-                             class="w-full h-full object-cover transition-all duration-300 cursor-zoom-in"
-                             @click="openImageModal(selectedImage)">
+                             class="w-full h-full object-contain transition-all duration-300 cursor-zoom-in"
+                             @click="openImageModal(selectedImage)"
+                             @error="handleImageError($event, selectedImage)"
+                             @load="handleImageLoad($event)">
                         <div v-if="currentImageColor" class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-700">
                             Màu: {{ currentImageColor }}
                         </div>
@@ -71,7 +75,7 @@
                             {{ currentImageIndex + 1 }} / {{ productImages.length }}
                         </div>
                         <!-- Navigation arrows -->
-                        <button 
+                        <button
                             v-if="productImages.length > 1"
                             @click="previousImage"
                             class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100">
@@ -79,7 +83,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
-                        <button 
+                        <button
                             v-if="productImages.length > 1"
                             @click="nextImage"
                             class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100">
@@ -120,7 +124,7 @@
                     <!-- Variant selection -->
                     <div v-if="(product.variants && product.variants.length) || (product.colors?.length || product.sizes?.length)">
                         <h4 class="font-semibold text-gray-900 mb-4">Chọn biến thể</h4>
-                        
+
                         <!-- Color Selection -->
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-3">
@@ -140,7 +144,7 @@
                                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                                     ]">
                                     <div class="flex items-center gap-2">
-                                        <div 
+                                        <div
                                             :style="{ backgroundColor: getColorHex(color) }"
                                             class="w-5 h-5 rounded-full border border-gray-300 flex-shrink-0"
                                             :class="getColorHex(color) ? '' : 'bg-gradient-to-br from-gray-200 to-gray-300'">
@@ -187,7 +191,7 @@
                         </div>
 
                         <!-- Stock Status -->
-                        <div v-if="currentVariant || (!variants.length && product.quantity)" class="mt-4 p-3 rounded-lg" 
+                        <div v-if="currentVariant || (!variants.length && product.quantity)" class="mt-4 p-3 rounded-lg"
                              :class="getStockStatusClass()">
                             <div class="flex items-center gap-2">
                                 <svg v-if="getStockStatusIcon()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,10 +246,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id"
                          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                        <div class="aspect-w-16 aspect-h-9">
+                        <div class="aspect-w-16 aspect-h-9 bg-gray-100 flex items-center justify-center">
                             <img :src="relatedProduct.img_url || '/images/placeholder.jpg'"
                                  :alt="relatedProduct.name"
-                                 class="w-full h-48 object-cover">
+                                 class="w-full h-48 object-contain"
+                                 @error="handleImageError($event, relatedProduct.img_url)"
+                                 @load="handleImageLoad($event)">
                         </div>
                         <div class="p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ relatedProduct.name }}</h3>
@@ -262,20 +268,22 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Image Modal -->
-        <div v-if="showImageModal" 
+        <div v-if="showImageModal"
              @click="closeImageModal"
              class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-            <button @click="closeImageModal" 
+            <button @click="closeImageModal"
                     class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
-            <img :src="modalImage" 
+            <img :src="modalImage"
                  :alt="product.name"
                  @click.stop
+                 @error="handleImageError($event, modalImage)"
+                 @load="handleImageLoad($event)"
                  class="max-w-full max-h-[90vh] object-contain rounded-lg">
         </div>
     </UserLayout>
@@ -304,8 +312,53 @@ const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 const showImageModal = ref(false)
 const modalImage = ref('')
+const imageErrors = ref(new Set())
 
-const variants = computed(() => Array.isArray(props.product?.variants) ? props.product.variants : [])
+// Handle image load errors
+const handleImageError = (event, imageUrl) => {
+    const img = event.target
+    const originalSrc = imageUrl || img.src
+    
+    // Mark this image URL as errored
+    if (originalSrc && originalSrc !== '/images/placeholder.jpg') {
+        imageErrors.value.add(originalSrc)
+    }
+    
+    // If image fails to load and it's not already placeholder, try placeholder
+    if (img.src !== '/images/placeholder.jpg' && !img.src.includes('placeholder')) {
+        img.src = '/images/placeholder.jpg'
+        img.onerror = () => {
+            // If placeholder also fails, hide the image
+            img.style.display = 'none'
+        }
+    } else {
+        // If placeholder also fails, hide the image
+        img.style.display = 'none'
+    }
+}
+
+// Handle successful image load
+const handleImageLoad = (event) => {
+    const img = event.target
+    // Ensure image is visible
+    img.style.display = ''
+    // Remove from error set if it was there
+    if (img.src && imageErrors.value.has(img.src)) {
+        imageErrors.value.delete(img.src)
+    }
+}
+
+const variants = computed(() => {
+    if (!Array.isArray(props.product?.variants)) {
+        return [];
+    }
+    // Sort by id (or created order) so older variants appear first
+    return [...props.product.variants].sort((a, b) => {
+        const aId = a?.id ?? 0;
+        const bId = b?.id ?? 0;
+        return aId - bId;
+    });
+})
 
 const normalize = (val) => (val ?? '').toString().trim()
 
@@ -386,7 +439,7 @@ const colorImageMap = ref({})
 const initializeColorImages = () => {
     const map = {}
     const baseUrl = props.product.img_url || ''
-    
+
     if (variants.value.length > 0) {
         // Priority: Use img_url from variants if available
         variants.value.forEach(variant => {
@@ -399,7 +452,7 @@ const initializeColorImages = () => {
             }
         })
     }
-    
+
     // For colors without specific variant images, try to construct URL based on color name
     // This is a fallback if variants don't have img_url
     availableColors.value.forEach(color => {
@@ -413,22 +466,22 @@ const initializeColorImages = () => {
             map[normalizedColor] = `${basePath}_${colorSlug}${extension}`
         }
     })
-    
+
     colorImageMap.value = map
 }
 
 // Initialize on mount
 onMounted(() => {
     initializeColorImages()
-    
+
     // Set up scroll listener for thumbnails
     if (thumbnailContainer.value) {
         thumbnailContainer.value.addEventListener('scroll', checkScrollability)
     }
-    
+
     // Check scrollability on resize
     window.addEventListener('resize', checkScrollability)
-    
+
     // Initial check
     setTimeout(() => {
         checkScrollability()
@@ -441,7 +494,7 @@ const productImages = computed(() => {
     const baseImage = props.product.img_url || '/images/placeholder.jpg'
     const seenImages = new Set()
     const colorImageMap_local = {}
-    
+
     // First, collect one image per color from variants
     if (variants.value.length > 0) {
         variants.value.forEach(variant => {
@@ -454,14 +507,14 @@ const productImages = computed(() => {
             }
         })
     }
-    
+
     // Add images from color mapping (one per color)
     Object.entries(colorImageMap.value).forEach(([color, imgUrl]) => {
         if (imgUrl && !colorImageMap_local[normalize(color)]) {
             colorImageMap_local[normalize(color)] = imgUrl
         }
     })
-    
+
     // Add main product image first if no color images
     if (Object.keys(colorImageMap_local).length === 0 && baseImage) {
         images.push(baseImage)
@@ -475,22 +528,23 @@ const productImages = computed(() => {
             }
         })
     }
-    
+
     // If no images found, use placeholder
     if (images.length === 0) {
         images.push('/images/placeholder.jpg')
     }
-    
-    return images
+
+    // Filter out invalid images (those that have errored)
+    return images.filter(img => !imageErrors.value.has(img))
 })
 
 // Get color for current image
 const currentImageColor = computed(() => {
     if (!selectedImage.value) return null
-    
+
     // Find which color this image belongs to
     const currentImg = selectedImage.value
-    
+
     // Check variants first
     if (variants.value.length > 0) {
         const variant = variants.value.find(v => v.img_url === currentImg)
@@ -498,45 +552,45 @@ const currentImageColor = computed(() => {
             return variant.color
         }
     }
-    
+
     // Check color mapping
     for (const [color, imgUrl] of Object.entries(colorImageMap.value)) {
         if (imgUrl === currentImg) {
             return color
         }
     }
-    
+
     // If selected color is set, use it
     if (selectedColor.value) {
         return selectedColor.value
     }
-    
+
     return null
 })
 
 // Computed property for current product image based on selected color
 const currentProductImage = computed(() => {
     const baseImage = props.product.img_url || '/images/placeholder.jpg'
-    
+
     // If color is selected, try to get color-specific image from variant
     if (selectedColor.value) {
         const color = normalize(selectedColor.value)
-        
+
         // Priority 1: Find variant with exact color match that has img_url
-        const colorVariant = variants.value.find(v => 
+        const colorVariant = variants.value.find(v =>
             normalize(v.color) === color && v.img_url
         )
         if (colorVariant?.img_url) {
             return colorVariant.img_url
         }
-        
+
         // Priority 2: Use color-image mapping (from initializeColorImages)
         const colorImage = colorImageMap.value[color]
         if (colorImage && colorImage !== baseImage) {
             return colorImage
         }
     }
-    
+
     // Default to product image
     return baseImage
 })
@@ -544,9 +598,25 @@ const currentProductImage = computed(() => {
 // Selected image (from gallery)
 const selectedImage = computed(() => {
     if (productImages.value.length > 0 && currentImageIndex.value < productImages.value.length) {
-        return productImages.value[currentImageIndex.value]
+        const img = productImages.value[currentImageIndex.value]
+        // If image has errored, try next one or fallback
+        if (imageErrors.value.has(img)) {
+            // Try next image
+            const nextIndex = (currentImageIndex.value + 1) % productImages.value.length
+            if (nextIndex !== currentImageIndex.value && !imageErrors.value.has(productImages.value[nextIndex])) {
+                return productImages.value[nextIndex]
+            }
+            // Fallback to placeholder
+            return '/images/placeholder.jpg'
+        }
+        return img
     }
-    return currentProductImage.value
+    const currentImg = currentProductImage.value
+    // If current image has errored, use placeholder
+    if (imageErrors.value.has(currentImg)) {
+        return '/images/placeholder.jpg'
+    }
+    return currentImg
 })
 
 // Color to hex mapping for common Vietnamese color names
@@ -600,8 +670,8 @@ const canSelectSize = (size) => {
     if (variants.value.length === 0) return true
     if (!selectedColor.value) return false
     const selColor = normalize(selectedColor.value)
-    return variants.value.some(v => 
-        normalize(v.color) === selColor && 
+    return variants.value.some(v =>
+        normalize(v.color) === selColor &&
         normalize(v.size) === normalize(size) &&
         (v.quantity || 0) > 0
     )
@@ -634,16 +704,16 @@ watch(selectedColor, () => {
     selectedSize.value = ''
     quantity.value = 1
     cartMessage.value = null
-    
+
     // Update image index when color changes
     if (selectedColor.value) {
         const color = normalize(selectedColor.value)
-        
+
         // Try to find variant image for this color
-        const colorVariant = variants.value.find(v => 
+        const colorVariant = variants.value.find(v =>
             normalize(v.color) === color && v.img_url
         )
-        
+
         if (colorVariant?.img_url) {
             const imageIndex = productImages.value.findIndex(img => img === colorVariant.img_url)
             if (imageIndex !== -1) {
@@ -652,7 +722,7 @@ watch(selectedColor, () => {
                 return
             }
         }
-        
+
         // Try color mapping
         const colorImage = colorImageMap.value[color]
         if (colorImage) {
@@ -683,7 +753,7 @@ const scrollToThumbnail = (index) => {
             const thumbnail = thumbnails[index]
             const containerRect = container.getBoundingClientRect()
             const thumbnailRect = thumbnail.getBoundingClientRect()
-            
+
             // For vertical scroll
             const scrollTop = thumbnail.offsetTop - container.offsetTop - (containerRect.height / 2) + (thumbnailRect.height / 2)
             container.scrollTo({

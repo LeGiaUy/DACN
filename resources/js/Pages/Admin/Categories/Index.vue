@@ -34,6 +34,40 @@
                 </div>
             </div>
 
+            <!-- Import Categories -->
+            <div class="rounded-lg border border-dashed border-teal-200 bg-teal-50 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-teal-800">Import danh mục từ CSV/Excel</p>
+                    <p class="text-xs text-teal-700 mt-1">
+                        Cột bắt buộc: <code>name</code>. Tùy chọn: <code>description</code>.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        @click="downloadCategoryTemplate"
+                        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-teal-400 text-teal-800 bg-white hover:bg-teal-50"
+                    >
+                        Tải file mẫu
+                    </button>
+                    <input
+                        ref="categoryFileInput"
+                        type="file"
+                        accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                        @change="onCategoryFileChange"
+                        class="text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-teal-600 file:text-white hover:file:bg-teal-700"
+                    />
+                    <button
+                        type="button"
+                        @click="importCategories"
+                        :disabled="!categoryImportFile || importingCategories"
+                        class="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {{ importingCategories ? 'Đang import...' : 'Import' }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Loading State -->
             <div v-if="loading" class="bg-white rounded-lg shadow-sm p-12 text-center">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
@@ -208,6 +242,8 @@ export default {
             isModalOpen: false,
             isEditing: false,
             selectedCategories: [],
+            categoryImportFile: null,
+            importingCategories: false,
             form: {
                 id: null,
                 name: '',
@@ -236,6 +272,60 @@ export default {
                 this.error = "Failed to load categories. Please try again later.";
             } finally {
                 this.loading = false;
+            }
+        },
+        onCategoryFileChange(event) {
+            const file = event.target.files[0] || null;
+            this.categoryImportFile = file;
+        },
+        downloadCategoryTemplate() {
+            // Thêm UTF-8 BOM để Excel đọc đúng tiếng Việt
+            const BOM = '\uFEFF'
+            const header = 'name,description\n'
+            const example = 'Quần áo bé trai,Danh mục cho bé trai\n'
+            const content = BOM + header + example
+            const blob = new Blob([content], {
+              type: 'text/csv;charset=utf-8;',
+            })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'categories_template.csv'
+            a.click()
+            URL.revokeObjectURL(url)
+        },
+        async importCategories() {
+            if (!this.categoryImportFile) return
+            const formData = new FormData()
+            formData.append('file', this.categoryImportFile)
+            this.importingCategories = true
+            try {
+                const response = await axios.post(
+                  'http://127.0.0.1:8000/api/categories/import',
+                  formData,
+                  {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                  }
+                )
+                alert(
+                  response.data?.message ||
+                    'Import danh mục thành công'
+                )
+                // Reset input file
+                this.categoryImportFile = null
+                if (this.$refs.categoryFileInput) {
+                  this.$refs.categoryFileInput.value = ''
+                }
+                // Fetch lại danh sách categories
+                await this.fetchCategories()
+            } catch (error) {
+                console.error('Error importing categories:', error)
+                alert(
+                  error.response?.data?.message ||
+                    'Lỗi khi import danh mục'
+                )
+            } finally {
+                this.importingCategories = false
             }
         },
         async handleSubmit() {

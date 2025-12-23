@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class CheckoutController extends Controller
@@ -168,8 +171,9 @@ class CheckoutController extends Controller
                 'total' => $total,
             ]);
 
-            // Create order items
+            // Create order items & decrease stock (product / variant)
             foreach ($cartItems as $cartItem) {
+                // Tạo dòng chi tiết đơn hàng
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
@@ -180,6 +184,50 @@ class CheckoutController extends Controller
                     'price' => $cartItem->price,
                     'subtotal' => $cartItem->subtotal,
                 ]);
+
+                // Giảm tồn kho
+                // Khóa bản ghi sản phẩm để tránh race condition
+                $product = Product::where('id', $cartItem->product_id)->lockForUpdate()->first();
+                if (!$product) {
+                    continue;
+                }
+
+                $orderedQty = (int) $cartItem->quantity;
+
+                // Nếu có bảng product_variants, ưu tiên trừ tồn kho theo biến thể (color + size)
+                if (Schema::hasTable('product_variants')) {
+                    $variantQuery = ProductVariant::where('product_id', $product->id);
+                    
+                    if (!empty($cartItem->color)) {
+                        $variantQuery->where('color', $cartItem->color);
+                    }
+                    if (!empty($cartItem->size)) {
+                        $variantQuery->where('size', $cartItem->size);
+                    }
+
+                    // Khóa bản ghi biến thể nếu tìm thấy
+                    $variant = $variantQuery->lockForUpdate()->first();
+
+                    if ($variant) {
+                        $currentVariantQty = (int) ($variant->quantity ?? 0);
+                        $variant->quantity = max(0, $currentVariantQty - $orderedQty);
+                        $variant->save();
+                    } else {
+                        // Không tìm thấy biến thể phù hợp, fallback trừ tồn kho tổng của sản phẩm
+                        if ($product->quantity !== null) {
+                            $currentQty = (int) $product->quantity;
+                            $product->quantity = max(0, $currentQty - $orderedQty);
+                            $product->save();
+                        }
+                    }
+                } else {
+                    // Không dùng bảng biến thể, trừ trực tiếp tồn kho sản phẩm
+                    if ($product->quantity !== null) {
+                        $currentQty = (int) $product->quantity;
+                        $product->quantity = max(0, $currentQty - $orderedQty);
+                        $product->save();
+                    }
+                }
             }
 
             DB::commit();

@@ -15,11 +15,18 @@ Route::get('/user', function (Request $request) {
 Route::name('api.')->group(function () {
     Route::apiResource('brands', BrandsController::class);
     Route::post('brands/bulk-delete', [BrandsController::class, 'destroyMany'])->name('brands.bulk-delete');
+    Route::post('brands/import', [BrandsController::class, 'import'])->name('brands.import');
+
     Route::apiResource('categories', CategoriesController::class);
     Route::post('categories/bulk-delete', [CategoriesController::class, 'destroyMany'])->name('categories.bulk-delete');
+    Route::post('categories/import', [CategoriesController::class, 'import'])->name('categories.import');
+
     Route::apiResource('products', ProductsController::class);
     Route::post('products/bulk-delete', [ProductsController::class, 'destroyMany'])->name('products.bulk-delete');
+    Route::post('products/import', [ProductsController::class, 'import'])->name('products.import');
+
     Route::apiResource('product-variants', ProductVariantsController::class);
+    Route::post('product-variants/import', [ProductVariantsController::class, 'import'])->name('product-variants.import');
     Route::post('product-variants/bulk-update-quantity', [ProductVariantsController::class, 'bulkUpdateQuantity'])->name('product-variants.bulk-update-quantity');
     Route::get('product-variants/statistics', [ProductVariantsController::class, 'statistics'])->name('product-variants.statistics');
     
